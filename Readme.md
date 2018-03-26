@@ -26,7 +26,10 @@ Proposers keep minimal state needed to generate unique increasing update IDs (ba
 - It’s convenient to use tuples as ballot numbers. 
 To generate it a proposer combines its numerical ID with a local increasing counter: (counter, ID). 
 To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
-- When a proposer receives a conflicting message from an acceptor, it should fast-forward its counter to avoid a conflict in the future.
+- When a proposer receives a conflicting message from an acceptor, it should fast-forward its counter to avoid a conflict in the future. 
+If an acceptor returns a conflict if it already saw a greater ballot number during the prepare message, does the Proposer retry with a higher ballot number or does it just stop?
+Ans: It doesn't matter from the protocol's point of view and different implementations may implement it in different ways. - https://twitter.com/rystsov/status/971797758284677120       
+Proposers in Kshaka will, for the time been, will not retry after conflicts.
 
 - Clients change its value by submitting side-effect free functions which take the current state as an argument and yield new as a result. 
 Out of the concurrent requests only one can succeed;  we should acquire a lock:: https://github.com/gryadka/js/blob/dfc6ed6f7580c895a9db44d06756a3dd637e47f6/core/src/Proposer.js#L47-L48 
