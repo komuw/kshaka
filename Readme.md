@@ -16,7 +16,7 @@ Its symmetric peer-to-peer approach achieves optimal commit latency in wide-area
 
 # System design
 
-### Intro:           
+### 1. Intro:           
 - Clients initiate a request by communicating with a proposer; clients may be stateless, the system may have arbitrary numbers of clients.               
 - Proposers perform the initialization by communicating with acceptors. 
 Proposers keep minimal state needed to generate unique increasing update IDs (ballot numbers), the system may have arbitrary numbers of proposers.        
@@ -31,7 +31,7 @@ To compare ballot tuples, we should compare the first component of the tuples an
 - Clients change its value by submitting side-effect free functions which take the current state as an argument and yield new as a result. 
 Out of the concurrent requests only one can succeed;  we should acquire a lock:: https://github.com/gryadka/js/blob/dfc6ed6f7580c895a9db44d06756a3dd637e47f6/core/src/Proposer.js#L47-L48 
 
-### Algo:            
+### 2. Algo:            
 
 A. Prepare phase
 - A client submits the f change function to a proposer.
@@ -50,5 +50,11 @@ C. End
 - Proposer waits for the F + 1 confirmations.
 - Proposer returns the new state to the client.       
 
-### Cluster membership change
+### 3. Cluster membership change
 - todo                 
+
+### 4. Deleting record/s
+- todo         
+
+### 5. Optimizations
+- todo          
