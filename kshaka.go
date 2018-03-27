@@ -4,6 +4,12 @@ import (
 	"fmt"
 )
 
+type prepareError string
+
+func (e prepareError) Error() string {
+	return string(e)
+}
+
 type client struct {
 }
 
@@ -41,12 +47,6 @@ type acceptor struct {
 	id             uint64
 	acceptedBallot ballot
 	acceptedValue  []byte
-}
-
-type prepareError string
-
-func (e prepareError) Error() string {
-	return string(e)
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
