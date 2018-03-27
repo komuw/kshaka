@@ -15,12 +15,13 @@ func Test_proposer_addAcceptor(t *testing.T) {
 	}
 	a := acceptor{}
 	for _, v := range tt {
-		err := v.p.addAcceptor(a)
+		err := v.p.addAcceptor(&a)
 		fmt.Printf("%#+v", v.p)
 		if err != nil {
 			t.Errorf("\nCalled p.addAcceptor(%#+v) \ngot %s \nwanted %#+v", a, err, v.expectedErr)
 		}
 	}
+
 }
 
 func Test_acceptor_prepare(t *testing.T) {

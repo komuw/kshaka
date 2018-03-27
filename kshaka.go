@@ -21,7 +21,7 @@ type ballot struct {
 type proposer struct {
 	id        uint64
 	ballot    ballot
-	acceptors []acceptor
+	acceptors []*acceptor
 }
 
 func newProposer() proposer {
@@ -31,7 +31,7 @@ func newProposer() proposer {
 	return p
 }
 
-func (p *proposer) addAcceptor(a acceptor) error {
+func (p *proposer) addAcceptor(a *acceptor) error {
 	p.acceptors = append(p.acceptors, a)
 	return nil
 }
