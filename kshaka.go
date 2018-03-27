@@ -28,6 +28,7 @@ type ballot struct {
 // the system may have arbitrary numbers of proposers.
 type proposer struct {
 	id        uint64
+	state     []byte
 	ballot    ballot
 	acceptors []*acceptor
 }
@@ -44,52 +45,64 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 	return nil
 }
 
+// The proposer generates a ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.
+// Proposer waits for the F + 1 confirmations.
+// If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
+// otherwise it picks the value of the tuple with the highest ballot number.
 func (p *proposer) sendPrepare() error {
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
 		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
-	// we need to have 2F+1 acceptors to tolerate F failures, thus:
+	// number of failures we can tolerate:
 	F := (noAcceptors - 1) / 2
 
-	ballots := []ballot{}
-	values := [][]byte{}
+	acceptedStates := []acceptorState{}
+	OKs := []bool{}
 	var err error
 
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedBallot, acceptedValue, e := a.prepare(p.ballot)
-		ballots = append(ballots, acceptedBallot)
-		values = append(values, acceptedValue)
+		acceptedState, prepareOK, e := a.prepare(p.ballot)
+		acceptedStates = append(acceptedStates, acceptedState)
+		OKs = append(OKs, prepareOK)
 		err = e
 	}
-	fmt.Println("ballots, values, err, F", ballots, values, err, F)
+	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
 
+	// TODO: implement better logic for waiting for F+1 confirmations
+	if len(OKs) < F+1 {
+		return prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
+	}
+	for _, v := range acceptedStates {
+		fmt.Printf("\n\n v:%#+v\n", v)
+	}
 	return nil
+}
+
+type acceptorState struct {
+	acceptedBallot ballot
+	acceptedValue  []byte
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 type acceptor struct {
-	id             uint64
-	acceptedBallot ballot
-	acceptedValue  []byte
+	id            uint64
+	acceptedState acceptorState
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
-func (a *acceptor) prepare(b ballot) (ballot, []byte, error) {
-	acceptedBallot := a.acceptedBallot
-	acceptedValue := a.acceptedValue
-
+func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
-	if acceptedBallot.counter > b.counter {
-		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+	if a.acceptedState.acceptedBallot.counter > b.counter {
+		return a.acceptedState, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
 	}
-	a.acceptedBallot = b
-	return acceptedBallot, acceptedValue, nil
+	a.acceptedState.acceptedBallot = b
+	return a.acceptedState, true, nil
 }
 
 // Node represents an entity that is both a Proposer and an Acceptor.
