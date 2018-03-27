@@ -13,7 +13,18 @@ func (e prepareError) Error() string {
 	return string(e)
 }
 
+type acceptError string
+
+func (e acceptError) Error() string {
+	return string(e)
+}
+
 type client struct {
+}
+
+// TODO: remove this placeholder for the; f change function
+var changeFunc = func(state []byte) []byte {
+	return state
 }
 
 // It’s convenient to use tuples as ballot numbers.
@@ -93,6 +104,44 @@ func (p *proposer) sendPrepare() error {
 	return nil
 }
 
+// Proposer applies the f function to the current state and sends the result, new state,
+// along with the generated ballot number B (an ”accept” message) to the acceptors.
+func (p *proposer) sendAccept() ([]byte, error) {
+	// probably we shouldn't call this method if we havent called prepare yet and it is finished
+	noAcceptors := len(p.acceptors)
+	if noAcceptors < minimumNoAcceptors {
+		return nil, acceptError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
+	}
+	// number of failures we can tolerate:
+	F := (noAcceptors - 1) / 2
+
+	acceptedStates := []acceptorState{}
+	OKs := []bool{}
+	var err error
+
+	newState := changeFunc(p.state)
+	for _, a := range p.acceptors {
+		fmt.Printf("acceptor %#+v\n", a)
+		//TODO: call prepare concurrently
+		acceptedState, acceptOK, e := a.accept(p.ballot, newState)
+		acceptedStates = append(acceptedStates, acceptedState)
+		OKs = append(OKs, acceptOK)
+		err = e
+	}
+	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
+
+	// TODO: implement better logic for waiting for F+1 confirmations
+	if len(OKs) < F+1 {
+		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
+	}
+
+	p.Lock()
+	p.state = newState
+	p.Unlock()
+	fmt.Printf("\n\n newState:%#+v\n", p.state)
+	return p.state, nil
+}
+
 type acceptorState struct {
 	acceptedBallot ballot
 	acceptedValue  []byte
@@ -101,7 +150,7 @@ type acceptorState struct {
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 type acceptor struct {
 	id            uint64
-	acceptedState acceptorState
+	acceptedState acceptorState // TODO: this should probably be guarded by a mutex??
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
@@ -113,8 +162,26 @@ func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
 	if a.acceptedState.acceptedBallot.counter > b.counter {
 		return a.acceptedState, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
 	}
+
+	// TODO: this should be flushed to disk
+	// also I think we need to protect via mutex?
 	a.acceptedState.acceptedBallot = b
 	return a.acceptedState, true, nil
+}
+
+// Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
+// Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
+func (a *acceptor) accept(b ballot, newState []byte) (acceptorState, bool, error) {
+	if a.acceptedState.acceptedBallot.counter > b.counter {
+		return a.acceptedState, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
+	}
+
+	// TODO: this should be flushed to disk
+	// also I think we need to protect via mutex?
+	a.acceptedState.acceptedBallot = b
+	a.acceptedState.acceptedValue = newState
+	return a.acceptedState, true, nil
+
 }
 
 // Node represents an entity that is both a Proposer and an Acceptor.
