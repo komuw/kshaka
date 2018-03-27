@@ -106,6 +106,8 @@ func (p *proposer) sendPrepare() error {
 
 // Proposer applies the f function to the current state and sends the result, new state,
 // along with the generated ballot number B (an ”accept” message) to the acceptors.
+// Proposer waits for the F + 1 confirmations.
+// Proposer returns the new state to the client.
 func (p *proposer) sendAccept() ([]byte, error) {
 	// probably we shouldn't call this method if we havent called prepare yet and it is finished
 	noAcceptors := len(p.acceptors)
@@ -150,7 +152,8 @@ type acceptorState struct {
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 type acceptor struct {
 	id            uint64
-	acceptedState acceptorState // TODO: this should probably be guarded by a mutex??
+	sync.Mutex    // protects acceptedState
+	acceptedState acceptorState
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
@@ -164,8 +167,9 @@ func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
 	}
 
 	// TODO: this should be flushed to disk
-	// also I think we need to protect via mutex?
+	a.Lock()
 	a.acceptedState.acceptedBallot = b
+	a.Unlock()
 	return a.acceptedState, true, nil
 }
 
@@ -177,9 +181,10 @@ func (a *acceptor) accept(b ballot, newState []byte) (acceptorState, bool, error
 	}
 
 	// TODO: this should be flushed to disk
-	// also I think we need to protect via mutex?
+	a.Lock()
 	a.acceptedState.acceptedBallot = b
 	a.acceptedState.acceptedValue = newState
+	a.Unlock()
 	return a.acceptedState, true, nil
 
 }
