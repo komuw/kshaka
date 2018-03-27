@@ -43,6 +43,12 @@ type acceptor struct {
 	acceptedValue  []byte
 }
 
+type prepareError string
+
+func (e prepareError) Error() string {
+	return string(e)
+}
+
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
@@ -53,7 +59,7 @@ func (a *acceptor) prepare(b ballot) (ballot, []byte, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
 	if acceptedBallot.counter > b.counter {
-		return acceptedBallot, acceptedValue, fmt.Errorf("The submitted ballot: %v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id)
+		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("The submitted ballot: %v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 	a.acceptedBallot = b
 	return acceptedBallot, acceptedValue, nil
