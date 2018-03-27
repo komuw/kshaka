@@ -78,3 +78,50 @@ func Test_acceptor_prepare(t *testing.T) {
 		}
 	}
 }
+
+func Test_proposer_sendPrepare(t *testing.T) {
+	ok := []struct {
+		p           *proposer
+		acceptors   []acceptor
+		expectedErr error
+	}{
+		{&proposer{}, []acceptor{acceptor{}, acceptor{id: 100, acceptedValue: []byte("cool")}, acceptor{id: 123, acceptedValue: []byte("okay"), acceptedBallot: ballot{counter: 3, proposerID: 7}}}, nil},
+		{&proposer{}, []acceptor{acceptor{}, acceptor{}, acceptor{id: 100, acceptedValue: []byte("cool")}, acceptor{id: 123, acceptedValue: []byte("okay"), acceptedBallot: ballot{counter: 3, proposerID: 7}}}, nil},
+	}
+
+	conflict := []struct {
+		p         *proposer
+		acceptors []acceptor
+	}{
+		{&proposer{}, []acceptor{acceptor{}}},
+		{&proposer{}, []acceptor{acceptor{}, acceptor{id: 100, acceptedValue: []byte("cool")}}},
+	}
+
+	for _, v := range ok {
+		var err error
+		for _, val := range v.acceptors {
+			var nonShadow = val
+			e := v.p.addAcceptor(&nonShadow)
+			err = e
+		}
+
+		err = v.p.sendPrepare()
+		if err != nil {
+			t.Errorf("\nCalled p.sendPrepare(%#+v) \ngot %s \nwanted %#+v", "", err, v.expectedErr)
+		}
+	}
+
+	for _, v := range conflict {
+		var err error
+		for _, val := range v.acceptors {
+			var nonShadow = val
+			e := v.p.addAcceptor(&nonShadow)
+			err = e
+		}
+
+		err = v.p.sendPrepare()
+		if err == nil {
+			t.Errorf("\nCalled p.sendPrepare(%#+v) \ngot %s \nwanted %#+v", "", err, nil)
+		}
+	}
+}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+const minimumNoAcceptors = 3
+
 type prepareError string
 
 func (e prepareError) Error() string {
@@ -42,6 +44,31 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 	return nil
 }
 
+func (p *proposer) sendPrepare() error {
+	noAcceptors := len(p.acceptors)
+	if noAcceptors < minimumNoAcceptors {
+		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
+	}
+	// we need to have 2F+1 acceptors to tolerate F failures, thus:
+	F := (noAcceptors - 1) / 2
+
+	ballots := []ballot{}
+	values := [][]byte{}
+	var err error
+
+	for _, a := range p.acceptors {
+		fmt.Printf("acceptor %#+v\n", a)
+		//TODO: call prepare concurrently
+		acceptedBallot, acceptedValue, e := a.prepare(p.ballot)
+		ballots = append(ballots, acceptedBallot)
+		values = append(values, acceptedValue)
+		err = e
+	}
+	fmt.Println("ballots, values, err, F", ballots, values, err, F)
+
+	return nil
+}
+
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 type acceptor struct {
 	id             uint64
@@ -59,7 +86,7 @@ func (a *acceptor) prepare(b ballot) (ballot, []byte, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
 	if acceptedBallot.counter > b.counter {
-		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("submitted ballot: %v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 	a.acceptedBallot = b
 	return acceptedBallot, acceptedValue, nil
