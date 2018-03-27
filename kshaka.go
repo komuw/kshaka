@@ -35,11 +35,11 @@ type proposer struct {
 	state      []byte
 }
 
-func newProposer() proposer {
+func newProposer() *proposer {
 	var proposerID uint64 = 1
 	b := ballot{counter: 1, proposerID: proposerID}
 	p := proposer{id: proposerID, ballot: b}
-	return p
+	return &p
 }
 
 func (p *proposer) addAcceptor(a *acceptor) error {
