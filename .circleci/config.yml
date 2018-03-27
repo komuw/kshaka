@@ -1,0 +1,129 @@
+# Golang CircleCI 2.0 configuration file
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+# tags DOCS: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
+version: 2
+jobs:
+  build:
+    docker:
+        - image: ubuntu:16.04
+    working_directory: ~/go/src/github.com/komuw/kshaka
+    steps:
+        - checkout
+        - run:
+            name: install apt deps
+            command: |
+                apt-get -y update
+                apt -y install \
+                            curl \
+                            wget \
+                            git \
+                            python \
+                            software-properties-common \
+                            build-essential \
+                            nano
+
+        - run:
+            name: install golang
+            command: |
+                wget --directory-prefix=/usr/local https://dl.google.com/go/go1.10.linux-amd64.tar.gz
+                tar -C /usr/local -xzf /usr/local/go1.10.linux-amd64.tar.gz
+                export PATH=$PATH:/usr/local/go/bin
+                echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
+                mkdir -p ~/go/bin
+                echo "export PATH=$PATH:~/go/bin" >> /etc/profile
+                echo "export LC_ALL=C.UTF-8" >> /etc/profile
+                echo "export LANG=C.UTF-8" >> /etc/profile
+                source /etc/profile
+
+        - run:
+            name: install golang pkgs
+            command: |
+                source /etc/profile && \
+                go get -u github.com/golang/dep/cmd/dep && \
+                go get -u github.com/goreleaser/goreleaser && \
+                dep ensure
+
+        - run: source /etc/profile && go build --race -o kshaka main.go
+
+        - run:
+             name: go vet
+             command: source /etc/profile && go vet -v -all -shadow ./...
+  
+        - run:
+            name: run tests
+            command: source /etc/profile && go test -timeout 1m -race -cover -v ./...
+
+        - run:
+            name: run benchmarks
+            command: source /etc/profile && go test -timeout 1m -race -run=XXXX -bench=. ./...
+
+
+  deploy:
+    docker:
+        - image: ubuntu:16.04
+    working_directory: ~/go/src/github.com/komuw/kshaka
+    steps:
+        - checkout
+        - run:
+            name: install apt deps
+            command: |
+                apt-get -y update
+                apt -y install \
+                            curl \
+                            wget \
+                            git \
+                            python \
+                            software-properties-common \
+                            build-essential \
+                            nano
+  
+        - run:
+            name: install golang
+            command: |
+                wget --directory-prefix=/usr/local https://dl.google.com/go/go1.10.linux-amd64.tar.gz
+                tar -C /usr/local -xzf /usr/local/go1.10.linux-amd64.tar.gz
+                export PATH=$PATH:/usr/local/go/bin
+                echo "export PATH=$PATH:/usr/local/go/bin" >> /etc/profile
+                mkdir -p ~/go/bin
+                echo "export PATH=$PATH:~/go/bin" >> /etc/profile
+                echo "export LC_ALL=C.UTF-8" >> /etc/profile
+                echo "export LANG=C.UTF-8" >> /etc/profile
+                source /etc/profile
+
+        - run:
+            name: install golang pkgs
+            command: |
+                source /etc/profile && \
+                go get -u github.com/golang/dep/cmd/dep && \
+                dep ensure -v
+
+        # use custom package that still has --skip-validate
+        - run:
+            name: go releaser
+            command: |
+                wget --directory-prefix=/usr/local https://github.com/goreleaser/goreleaser/releases/download/v0.54.3/goreleaser_Linux_x86_64.tar.gz
+                tar -C /usr/local -xzf /usr/local/goreleaser_Linux_x86_64.tar.gz
+
+        - run:
+            name: do a new release
+            command: |
+                LAST_GIT_MESSAGE=$(git log -n1 --format=oneline --pretty=%B)
+                echo "last git commit message on master:"
+                echo $LAST_GIT_MESSAGE
+                if [ "$LAST_GIT_MESSAGE" == 'do release' ]; then
+                    echo "deploying with goreleaser"
+                    source /etc/profile
+                    /usr/local/goreleaser --rm-dist -config .goreleaser.yml --debug --skip-validate
+                fi
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/

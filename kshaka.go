@@ -2,6 +2,7 @@ package kshaka
 
 import (
 	"fmt"
+	"sync"
 )
 
 const minimumNoAcceptors = 3
@@ -27,10 +28,11 @@ type ballot struct {
 // Proposers keep minimal state needed to generate unique increasing update IDs (ballot numbers),
 // the system may have arbitrary numbers of proposers.
 type proposer struct {
-	id        uint64
-	state     []byte
-	ballot    ballot
-	acceptors []*acceptor
+	id         uint64
+	ballot     ballot
+	acceptors  []*acceptor
+	sync.Mutex // protects state
+	state      []byte
 }
 
 func newProposer() proposer {
@@ -75,9 +77,19 @@ func (p *proposer) sendPrepare() error {
 	if len(OKs) < F+1 {
 		return prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
 	}
+
+	// Note; even if all replies from acceptors contain the empty value,
+	// then, p.state would be equal to the default value of []byte
+	maxState := acceptorState{}
 	for _, v := range acceptedStates {
-		fmt.Printf("\n\n v:%#+v\n", v)
+		if v.acceptedBallot.counter > maxState.acceptedBallot.counter {
+			maxState = v
+		}
 	}
+	p.Lock()
+	p.state = maxState.acceptedValue
+	p.Unlock()
+	fmt.Printf("\n\n maxState:%#+v\n", maxState)
 	return nil
 }
 
