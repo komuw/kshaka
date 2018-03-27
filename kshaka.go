@@ -59,7 +59,7 @@ func (a *acceptor) prepare(b ballot) (ballot, []byte, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
 	if acceptedBallot.counter > b.counter {
-		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("The submitted ballot: %v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+		return acceptedBallot, acceptedValue, prepareError(fmt.Sprintf("submitted ballot: %v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 	a.acceptedBallot = b
 	return acceptedBallot, acceptedValue, nil
