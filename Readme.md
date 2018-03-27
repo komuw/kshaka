@@ -20,7 +20,7 @@ Its symmetric peer-to-peer approach achieves optimal commit latency in wide-area
 - Clients initiate a request by communicating with a proposer; clients may be stateless, the system may have arbitrary numbers of clients.               
 - Proposers perform the initialization by communicating with acceptors. 
 Proposers keep minimal state needed to generate unique increasing update IDs (ballot numbers), the system may have arbitrary numbers of proposers.        
-- Acceptors store the acceptedv alue; the system should have 2F+1 acceptors to tolerate F failures.
+- Acceptors store the acceptedv value; the system should have 2F+1 acceptors to tolerate F failures.
 
 
 - It’s convenient to use tuples as ballot numbers. 
