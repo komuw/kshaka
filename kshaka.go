@@ -57,8 +57,11 @@ type proposer struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex // protects state
-	state      []byte
+	sync.Mutex        // protects state
+	state      []byte /*
+	  TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
+	  we can then provide an inMem implementation for reference: https://github.com/hashicorp/raft/blob/master/inmem_store.go
+	*/
 }
 
 func newProposer() *proposer {
@@ -172,8 +175,8 @@ type acceptor struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex    // protects acceptedState
-	acceptedState acceptorState
+	sync.Mutex                  // protects acceptedState
+	acceptedState acceptorState // TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
