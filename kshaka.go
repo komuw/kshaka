@@ -50,9 +50,13 @@ type ballot struct {
 // Proposers keep minimal state needed to generate unique increasing update IDs (ballot numbers),
 // the system may have arbitrary numbers of proposers.
 type proposer struct {
-	id         uint64
-	ballot     ballot
-	acceptors  []*acceptor
+	id        uint64
+	ballot    ballot
+	acceptors []*acceptor
+
+	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
+	// How to achieve this is an implementation detail.
+	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 	sync.Mutex // protects state
 	state      []byte
 }
@@ -108,6 +112,7 @@ func (p *proposer) sendPrepare() error {
 			maxState = v
 		}
 	}
+
 	p.Lock()
 	p.state = maxState.acceptedValue
 	p.Unlock()
@@ -162,7 +167,11 @@ type acceptorState struct {
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 type acceptor struct {
-	id            uint64
+	id uint64
+
+	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
+	// How to achieve this is an implementation detail.
+	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 	sync.Mutex    // protects acceptedState
 	acceptedState acceptorState
 }
