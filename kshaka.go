@@ -57,11 +57,8 @@ type proposer struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex        // protects state
-	state      []byte /*
-	  TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
-	  we can then provide an inMem implementation for reference: https://github.com/hashicorp/raft/blob/master/inmem_store.go
-	*/
+	sync.Mutex // protects state
+	stateStore StableStore
 }
 
 func newProposer() *proposer {
@@ -117,10 +114,11 @@ func (p *proposer) sendPrepare() error {
 	}
 
 	p.Lock()
-	p.state = maxState.acceptedValue
+	err = p.stateStore.Set([]byte("currentState"), maxState.acceptedValue)
+	// p.state = maxState.acceptedValue
 	p.Unlock()
 	fmt.Printf("\n\n maxState:%#+v\n", maxState)
-	return nil
+	return err
 }
 
 // Proposer applies the f function to the current state and sends the result, new state,
