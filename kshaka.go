@@ -216,7 +216,6 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
-	//a.acceptedState.acceptedBallot = b
 	// TODO: this should be flushed to disk
 	var ballotBuffer bytes.Buffer
 	enc := gob.NewEncoder(&ballotBuffer)
@@ -229,7 +228,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
 	}
-	return acceptorState{acceptedBallot: acceptedBallot, state: state}, true, nil
+	return acceptorState{acceptedBallot: b, state: state}, true, nil
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
