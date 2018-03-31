@@ -129,6 +129,9 @@ func (p *proposer) sendPrepare(key []byte) error {
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
 func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	p.Lock()
+	defer p.Unlock()
+
 	// probably we shouldn't call this method if we havent called prepare yet and it is finished
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
@@ -165,9 +168,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
 	}
 
-	p.Lock()
 	err = p.stateStore.Set(key, value)
-	p.Unlock()
 	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
 	return value, err
 }
