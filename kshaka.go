@@ -33,11 +33,6 @@ func (e acceptError) Error() string {
 type client struct {
 }
 
-// TODO: remove this placeholder for the; f change function
-var changeFunc = func(state []byte) []byte {
-	return state
-}
-
 // It’s convenient to use tuples as ballot numbers.
 // To generate it a proposer combines its numerical ID with a local increasing counter: (counter, ID).
 // To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
@@ -125,7 +120,7 @@ func (p *proposer) sendPrepare() error {
 // along with the generated ballot number B (an ”accept” message) to the acceptors.
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
-func (p *proposer) sendAccept() ([]byte, error) {
+func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// probably we shouldn't call this method if we havent called prepare yet and it is finished
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
@@ -138,11 +133,15 @@ func (p *proposer) sendAccept() ([]byte, error) {
 	OKs := []bool{}
 	var err error
 
-	newState := changeFunc(p.state)
+	value, err := changeFunc(key, p.stateStore)
+	if err != nil {
+		return value, err
+	}
+
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedState, acceptOK, e := a.accept(p.ballot, newState)
+		acceptedState, acceptOK, e := a.accept(p.ballot, key, value)
 		acceptedStates = append(acceptedStates, acceptedState)
 		OKs = append(OKs, acceptOK)
 		err = e
@@ -155,15 +154,15 @@ func (p *proposer) sendAccept() ([]byte, error) {
 	}
 
 	p.Lock()
-	p.state = newState
+	err = p.stateStore.Set(key, value)
 	p.Unlock()
-	fmt.Printf("\n\n newState:%#+v\n", p.state)
-	return p.state, nil
+	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
+	return value, err
 }
 
 type acceptorState struct {
 	acceptedBallot ballot
-	acceptedValue  []byte
+	stateStore     StableStore
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
@@ -177,36 +176,58 @@ type acceptor struct {
 	acceptedState acceptorState // TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
 }
 
+// the value of this constants are set with values that ought to make them unique.
+// this is because, clients will be prohibited from using these values as keys for their data.
+var acceptedBallotKey = []byte("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e")
+
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
 func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
+
+	acceptedBallot, err := a.acceptedState.stateStore.Get(acceptedBallotKey)
 	if a.acceptedState.acceptedBallot.counter > b.counter {
 		return a.acceptedState, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
 	}
 
 	// TODO: this should be flushed to disk
 	a.Lock()
-	a.acceptedState.acceptedBallot = b
-	a.Unlock()
+	defer a.Unlock()
+
+	//a.acceptedState.acceptedBallot = b
+	err := a.acceptedState.stateStore.Set(acceptedBallotKey, b)
+	if err != nil {
+		return a.acceptedState, false, err
+	}
 	return a.acceptedState, true, nil
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
-func (a *acceptor) accept(b ballot, newState []byte) (acceptorState, bool, error) {
+func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bool, error) {
 	if a.acceptedState.acceptedBallot.counter > b.counter {
 		return a.acceptedState, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
 	}
 
 	// TODO: this should be flushed to disk
 	a.Lock()
-	a.acceptedState.acceptedBallot = b
-	a.acceptedState.acceptedValue = newState
-	a.Unlock()
-	return a.acceptedState, true, nil
+	defer a.Unlock()
+	// we still need to unlock even when using a StableStore as the store of state.
+	// this is because, someone may provide us with non-concurrent safe StableStore
+
+	//a.acceptedState.acceptedBallot = b
+	err := a.acceptedState.stateStore.Set(acceptedBallotKey, b)
+	if err != nil {
+		return a.acceptedState, false, err
+	}
+	err := a.acceptedState.stateStore.Set(key, value)
+	if err != nil {
+		return a.acceptedState, false, err
+	}
+
+	return a.acceptedState, true, err
 
 }
 

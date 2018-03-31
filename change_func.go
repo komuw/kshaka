@@ -1,33 +1,26 @@
 package kshaka
 
-import "fmt"
+/*
+ChangeFunction is the function that clients send to proposers.
+The function takes the current state(StableStore) as an argument and yields the value  as a result.
 
-type ChangeFunction func(currentState []byte) []byte
-
-func readpo(x []byte) ChangeFunction {
-	fmt.Println("x", string(x))
-	return func(current []byte) []byte {
-		fmt.Println("current", string(current))
-		return current
-	}
+An example ChangeFunction is given below:
+var readFunc ChangeFunction = func(key []byte, current StableStore) ([]byte, error) {
+	value, err := current.Get(key)
+	return value, err
 }
 
-type StableStore interface {
-	Set(key []byte, val []byte) error
-	// Get returns the value for key, or an empty byte slice if key was not found.
-	Get(key []byte) ([]byte, error)
-	SetUint64(key []byte, val uint64) error
-	// GetUint64 returns the uint64 value for key, or 0 if key was not found.
-	GetUint64(key []byte) (uint64, error)
-}
+A client can send the above change function to a proposer, when the client wants to read the value stored
+at a key named foo. The proposer will apply that function to the current state of the StableStore and return
+the value stored at that key and an error.
 
-type ChangeF func(currentState StableStore) StableStore
+kv := map[string][]byte{"foo": []byte("bar")}
+m := &InmemStore{kv: kv}
+key := []byte("foo")
+ans, err := readFunc(key, m)
+fmt.Printf("\n\n ans:%#+v err:%+#v\n", string(ans), err)
+// ans:"bar" err:<nil>
 
-func read(x []byte) ChangeF {
-	fmt.Println("x", string(x))
-
-	return func(current StableStore) StableStore {
-		fmt.Println("current", current)
-		return current
-	}
-}
+*/
+//type ChangeFunction func(currentState StableStore) ([]byte, error)
+type ChangeFunction func(key []byte, currentState StableStore) ([]byte, error)
