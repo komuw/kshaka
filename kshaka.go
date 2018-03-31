@@ -12,11 +12,16 @@ TODO: add system design here.
 package kshaka
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 )
 
 const minimumNoAcceptors = 3
+
+// acceptedBallotKey is the key that we use to store the value of the current accepted ballot.
+// it ought to be unique and clients/users will be prohibited from using this value as a key for their data.
+var acceptedBallotKey = []byte("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e__")
 
 type prepareError string
 
@@ -126,6 +131,10 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	if noAcceptors < minimumNoAcceptors {
 		return nil, acceptError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
+	if bytes.Equal(key, acceptedBallotKey) {
+		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	}
+
 	// number of failures we can tolerate:
 	F := (noAcceptors - 1) / 2
 
@@ -175,10 +184,6 @@ type acceptor struct {
 	sync.Mutex                  // protects acceptedState
 	acceptedState acceptorState // TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
 }
-
-// the value of this constants are set with values that ought to make them unique.
-// this is because, clients will be prohibited from using these values as keys for their data.
-var acceptedBallotKey = []byte("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e")
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
