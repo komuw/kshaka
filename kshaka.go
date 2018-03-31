@@ -79,7 +79,7 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 // Proposer waits for the F + 1 confirmations.
 // If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
 // otherwise it picks the value of the tuple with the highest ballot number.
-func (p *proposer) sendPrepare() error {
+func (p *proposer) sendPrepare(key []byte) error {
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
 		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
@@ -94,7 +94,7 @@ func (p *proposer) sendPrepare() error {
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedState, prepareOK, e := a.prepare(p.ballot)
+		acceptedState, prepareOK, e := a.prepare(p.ballot, key)
 		acceptedStates = append(acceptedStates, acceptedState)
 		OKs = append(OKs, prepareOK)
 		err = e
@@ -117,7 +117,7 @@ func (p *proposer) sendPrepare() error {
 
 	p.Lock()
 	defer p.Unlock()
-	err = p.stateStore.Set([]byte("currentState"), maxState.acceptedValue)
+	err = p.stateStore.Set(key, maxState.state)
 	// p.state = maxState.acceptedValue
 
 	fmt.Printf("\n\n maxState:%#+v\n", maxState)
