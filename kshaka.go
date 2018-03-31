@@ -42,6 +42,7 @@ type client struct {
 // It’s convenient to use tuples as ballot numbers.
 // To generate it a proposer combines its numerical ID with a local increasing counter: (counter, ID).
 // To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
+// TODO: make ballot a simple structure, like uint64, so that we dont have to use encoding/gob when saving it.
 type ballot struct {
 	counter    uint64
 	proposerID uint64
@@ -234,13 +235,29 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
 func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bool, error) {
-	if a.acceptedState.acceptedBallot.counter > b.counter {
-		return a.acceptedState, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
+	a.Lock()
+	defer a.Unlock()
+
+	state, err := a.stateStore.Get(key)
+	if err != nil {
+		return acceptorState{}, false, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
+	}
+
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+
+	var acceptedBallot ballot
+	dec := gob.NewDecoder(acceptedBallotReader)
+	err = dec.Decode(&acceptedBallot)
+	if err != nil {
+		return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+	}
+	if acceptedBallot.counter > b.counter {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
 	// TODO: this should be flushed to disk
-	a.Lock()
-	defer a.Unlock()
+
 	// we still need to unlock even when using a StableStore as the store of state.
 	// this is because, someone may provide us with non-concurrent safe StableStore
 
@@ -248,21 +265,21 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 
 	var ballotBuffer bytes.Buffer
 	enc := gob.NewEncoder(&ballotBuffer)
-	err := enc.Encode(b)
+	err = enc.Encode(b)
 	if err != nil {
-		return a.acceptedState, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
 	}
 
-	err = a.acceptedState.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
 	if err != nil {
-		return a.acceptedState, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
 	}
-	err = a.acceptedState.stateStore.Set(key, value)
+	err = a.stateStore.Set(key, value)
 	if err != nil {
-		return a.acceptedState, false, err
+		return acceptorState{acceptedBallot: b, state: state}, false, err
 	}
 
-	return a.acceptedState, true, err
+	return acceptorState{acceptedBallot: b, state: value}, true, err
 
 }
 
