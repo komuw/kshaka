@@ -13,6 +13,7 @@ package kshaka
 
 import (
 	"bytes"
+	"encoding/gob"
 	"fmt"
 	"sync"
 )
@@ -114,9 +115,10 @@ func (p *proposer) sendPrepare() error {
 	}
 
 	p.Lock()
+	defer p.Unlock()
 	err = p.stateStore.Set([]byte("currentState"), maxState.acceptedValue)
 	// p.state = maxState.acceptedValue
-	p.Unlock()
+
 	fmt.Printf("\n\n maxState:%#+v\n", maxState)
 	return err
 }
@@ -171,7 +173,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 
 type acceptorState struct {
 	acceptedBallot ballot
-	stateStore     StableStore
+	state          []byte
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
@@ -181,32 +183,52 @@ type acceptor struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex                  // protects acceptedState
-	acceptedState acceptorState // TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
+	sync.Mutex             // protects stateStore
+	stateStore StableStore //stores ballots and state
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
-func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
+func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
 
-	acceptedBallot, err := a.acceptedState.stateStore.Get(acceptedBallotKey)
-	if a.acceptedState.acceptedBallot.counter > b.counter {
-		return a.acceptedState, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
-	}
-
-	// TODO: this should be flushed to disk
 	a.Lock()
 	defer a.Unlock()
 
-	//a.acceptedState.acceptedBallot = b
-	err := a.acceptedState.stateStore.Set(acceptedBallotKey, b)
+	state, err := a.stateStore.Get(key)
 	if err != nil {
-		return a.acceptedState, false, err
+		return acceptorState{}, false, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
-	return a.acceptedState, true, nil
+
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+
+	var acceptedBallot ballot
+	dec := gob.NewDecoder(acceptedBallotReader)
+	err = dec.Decode(&acceptedBallot)
+	if err != nil {
+		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+	}
+	if acceptedBallot.counter > b.counter {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+	}
+
+	//a.acceptedState.acceptedBallot = b
+	// TODO: this should be flushed to disk
+	var ballotBuffer bytes.Buffer
+	enc := gob.NewEncoder(&ballotBuffer)
+	err = enc.Encode(b)
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+	}
+
+	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+	}
+	return acceptorState{acceptedBallot: acceptedBallot, state: state}, true, nil
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
@@ -223,11 +245,19 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	// this is because, someone may provide us with non-concurrent safe StableStore
 
 	//a.acceptedState.acceptedBallot = b
-	err := a.acceptedState.stateStore.Set(acceptedBallotKey, b)
+
+	var ballotBuffer bytes.Buffer
+	enc := gob.NewEncoder(&ballotBuffer)
+	err := enc.Encode(b)
 	if err != nil {
 		return a.acceptedState, false, err
 	}
-	err := a.acceptedState.stateStore.Set(key, value)
+
+	err = a.acceptedState.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	if err != nil {
+		return a.acceptedState, false, err
+	}
+	err = a.acceptedState.stateStore.Set(key, value)
 	if err != nil {
 		return a.acceptedState, false, err
 	}
