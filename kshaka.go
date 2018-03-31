@@ -235,6 +235,8 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
 func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bool, error) {
+	// we still need to unlock even when using a StableStore as the store of state.
+	// this is because, someone may provide us with non-concurrent safe StableStore
 	a.Lock()
 	defer a.Unlock()
 
@@ -257,12 +259,6 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	}
 
 	// TODO: this should be flushed to disk
-
-	// we still need to unlock even when using a StableStore as the store of state.
-	// this is because, someone may provide us with non-concurrent safe StableStore
-
-	//a.acceptedState.acceptedBallot = b
-
 	var ballotBuffer bytes.Buffer
 	enc := gob.NewEncoder(&ballotBuffer)
 	err = enc.Encode(b)
