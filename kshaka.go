@@ -280,19 +280,23 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	enc := gob.NewEncoder(&ballotBuffer)
 	err = enc.Encode(b)
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
 	}
 
+	// TODO. NB: it is possible, from the following logic, for an acceptor to accept a ballot
+	// but not accept the new state/value. ie if the call to stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
+	// but stateStore.Set(key, value) fails.
+	// we should think about the ramifications of that for a second.
 	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
 	}
 	err = a.stateStore.Set(key, value)
 	if err != nil {
-		return acceptorState{acceptedBallot: b, state: state}, false, err
+		return acceptorState{acceptedBallot: b, state: state}, false, acceptError(fmt.Sprintf("%v", err))
 	}
 
-	return acceptorState{acceptedBallot: b, state: value}, true, err
+	return acceptorState{acceptedBallot: b, state: value}, true, nil
 
 }
 
