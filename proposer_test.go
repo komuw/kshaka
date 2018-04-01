@@ -14,6 +14,13 @@ func Test_proposer_Propose(t *testing.T) {
 		return value, err
 	}
 
+	var setFunc = func(k []byte, v []byte) ChangeFunction {
+		return func(key []byte, current StableStore) ([]byte, error) {
+			err := current.Set(k, v)
+			return v, err
+		}
+	}
+
 	type args struct {
 		key        []byte
 		changeFunc ChangeFunction
@@ -37,15 +44,20 @@ func Test_proposer_Propose(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
-		{name: "enough acceptors",
+		{name: "enough acceptors readFunc",
 			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: false,
 		},
+		{name: "enough acceptors setFunc",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}},
+			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("stephen"), []byte("hawking"))},
+			want:    []byte("hawking"),
+			wantErr: false,
+		},
 	}
-	// x := []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}
-	// fmt.Println(x)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &tt.p
