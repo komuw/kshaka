@@ -184,10 +184,8 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
-	// TODO: think about this some more
-	if value == nil {
-		return nil, acceptError(fmt.Sprintf("it is illegal to set a nil state for any key. key:%v", key))
-	}
+	// TODO: if value == nil should we save it, or return error??
+	// think about this some more
 
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
@@ -242,10 +240,6 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	if err != nil {
 		return acceptorState{}, false, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
-	// TODO: think about this some more
-	if state == nil {
-		return acceptorState{}, false, prepareError(fmt.Sprintf("nil state for key:%v from acceptor:%v", key, a.id))
-	}
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
 	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
@@ -289,24 +283,29 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	if err != nil {
 		return acceptorState{}, false, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
-	// TODO: think about this some more
-	if state == nil {
-		return acceptorState{}, false, acceptError(fmt.Sprintf("nil state for key:%v from acceptor:%v", key, a.id))
-	}
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
-	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
-
-	var acceptedBallot ballot
-	dec := gob.NewDecoder(acceptedBallotReader)
-	err = dec.Decode(&acceptedBallot)
 	if err != nil {
 		return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
-	if acceptedBallot.Counter > b.Counter {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
-	}
 
+	fmt.Printf("\n\n acceptedBallotBytes: %#+v", acceptedBallotBytes)
+
+	var acceptedBallot ballot
+	if !bytes.Equal(acceptedBallotBytes, nil) {
+		// ie we found an accepted ballot
+		acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+
+		dec := gob.NewDecoder(acceptedBallotReader)
+		err = dec.Decode(&acceptedBallot)
+		if err != nil {
+			fmt.Printf("\n\n err: %#+v", err)
+			return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+		}
+		if acceptedBallot.Counter > b.Counter {
+			return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+		}
+	}
 	// TODO: this should be flushed to disk
 	var ballotBuffer bytes.Buffer
 	enc := gob.NewEncoder(&ballotBuffer)
@@ -323,6 +322,7 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
 	}
+	fmt.Printf("\n\n key: %#+v. value: %#+v", string(key), string(value))
 	err = a.stateStore.Set(key, value)
 	if err != nil {
 		return acceptorState{acceptedBallot: b, state: state}, false, acceptError(fmt.Sprintf("%v", err))
