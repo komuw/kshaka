@@ -131,9 +131,11 @@ func (p *proposer) sendPrepare(key []byte) error {
 	}
 
 	err = p.stateStore.Set(key, maxState.state)
-	// p.state = maxState.acceptedValue
+	if err != nil {
+		return prepareError(fmt.Sprintf("%v", err))
+	}
 	fmt.Printf("\n\n maxState:%#+v\n", maxState)
-	return err
+	return nil
 }
 
 // Proposer applies the f function to the current state and sends the result, new state,
@@ -188,7 +190,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
 	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
-	return value, err
+	return value, nil
 }
 
 type acceptorState struct {
