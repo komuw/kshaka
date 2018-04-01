@@ -18,6 +18,11 @@ import (
 	"sync"
 )
 
+// TODO: handle zero values of stuff. eg if we find that an acceptor has replied with a state of default []byte(ie <nil>)
+// then we probably shouldn't save that as the state or reply to client as the state.
+// or maybe we should??
+// mull on this.
+
 const minimumNoAcceptors = 3
 
 // acceptedBallotKey is the key that we use to store the value of the current accepted ballot.
@@ -196,9 +201,6 @@ type acceptor struct {
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
 func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
-	// TODO: also take into account the node ID
-	// to resolve tie-breaks
-
 	a.Lock()
 	defer a.Unlock()
 
@@ -216,6 +218,8 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	if err != nil {
 		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
+	// TODO: also take into account the node ID
+	// to resolve tie-breaks
 	if acceptedBallot.counter > b.counter {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
@@ -225,12 +229,12 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	enc := gob.NewEncoder(&ballotBuffer)
 	err = enc.Encode(b)
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
 	}
 
 	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, err
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
 	}
 	return acceptorState{acceptedBallot: b, state: state}, true, nil
 }
