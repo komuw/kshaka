@@ -162,7 +162,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 
 	value, err := changeFunc(key, p.stateStore)
 	if err != nil {
-		return value, err
+		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
 
 	for _, a := range p.acceptors {
@@ -184,6 +184,9 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	}
 
 	err = p.stateStore.Set(key, value)
+	if err != nil {
+		return nil, acceptError(fmt.Sprintf("%v", err))
+	}
 	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
 	return value, err
 }
