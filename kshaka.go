@@ -12,11 +12,22 @@ TODO: add system design here.
 package kshaka
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"sync"
 )
 
+// TODO: handle zero values of stuff. eg if we find that an acceptor has replied with a state of default []byte(ie <nil>)
+// then we probably shouldn't save that as the state or reply to client as the state.
+// or maybe we should??
+// mull on this.
+
 const minimumNoAcceptors = 3
+
+// acceptedBallotKey is the key that we use to store the value of the current accepted ballot.
+// it ought to be unique and clients/users will be prohibited from using this value as a key for their data.
+var acceptedBallotKey = []byte("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e__")
 
 type prepareError string
 
@@ -33,14 +44,10 @@ func (e acceptError) Error() string {
 type client struct {
 }
 
-// TODO: remove this placeholder for the; f change function
-var changeFunc = func(state []byte) []byte {
-	return state
-}
-
 // It’s convenient to use tuples as ballot numbers.
 // To generate it a proposer combines its numerical ID with a local increasing counter: (counter, ID).
 // To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
+// TODO: make ballot a simple structure, like uint64, so that we dont have to use encoding/gob when saving it.
 type ballot struct {
 	counter    uint64
 	proposerID uint64
@@ -57,11 +64,8 @@ type proposer struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex        // protects state
-	state      []byte /*
-	  TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
-	  we can then provide an inMem implementation for reference: https://github.com/hashicorp/raft/blob/master/inmem_store.go
-	*/
+	sync.Mutex // protects state
+	stateStore StableStore
 }
 
 func newProposer() *proposer {
@@ -80,11 +84,18 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 // Proposer waits for the F + 1 confirmations.
 // If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
 // otherwise it picks the value of the tuple with the highest ballot number.
-func (p *proposer) sendPrepare() error {
+func (p *proposer) sendPrepare(key []byte) error {
+	p.Lock()
+	defer p.Unlock()
+
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
 		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
+	if bytes.Equal(key, acceptedBallotKey) {
+		return prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	}
+
 	// number of failures we can tolerate:
 	F := (noAcceptors - 1) / 2
 
@@ -95,10 +106,13 @@ func (p *proposer) sendPrepare() error {
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedState, prepareOK, e := a.prepare(p.ballot)
-		acceptedStates = append(acceptedStates, acceptedState)
-		OKs = append(OKs, prepareOK)
+		acceptedState, prepareOK, e := a.prepare(p.ballot, key)
 		err = e
+		acceptedStates = append(acceptedStates, acceptedState)
+		if prepareOK {
+			// we only count confirmations as those that replied with true
+			OKs = append(OKs, prepareOK)
+		}
 	}
 	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
 
@@ -116,9 +130,10 @@ func (p *proposer) sendPrepare() error {
 		}
 	}
 
-	p.Lock()
-	p.state = maxState.acceptedValue
-	p.Unlock()
+	err = p.stateStore.Set(key, maxState.state)
+	if err != nil {
+		return prepareError(fmt.Sprintf("%v", err))
+	}
 	fmt.Printf("\n\n maxState:%#+v\n", maxState)
 	return nil
 }
@@ -127,12 +142,19 @@ func (p *proposer) sendPrepare() error {
 // along with the generated ballot number B (an ”accept” message) to the acceptors.
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
-func (p *proposer) sendAccept() ([]byte, error) {
-	// probably we shouldn't call this method if we havent called prepare yet and it is finished
+func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	p.Lock()
+	defer p.Unlock()
+
+	// probably we shouldn't call this method, sendAccept, if we havent called prepare yet and it is finished
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
 		return nil, acceptError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
+	if bytes.Equal(key, acceptedBallotKey) {
+		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	}
+
 	// number of failures we can tolerate:
 	F := (noAcceptors - 1) / 2
 
@@ -140,14 +162,21 @@ func (p *proposer) sendAccept() ([]byte, error) {
 	OKs := []bool{}
 	var err error
 
-	newState := changeFunc(p.state)
+	value, err := changeFunc(key, p.stateStore)
+	if err != nil {
+		return nil, acceptError(fmt.Sprintf("%v", err))
+	}
+
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedState, acceptOK, e := a.accept(p.ballot, newState)
-		acceptedStates = append(acceptedStates, acceptedState)
-		OKs = append(OKs, acceptOK)
+		acceptedState, acceptOK, e := a.accept(p.ballot, key, value)
 		err = e
+		acceptedStates = append(acceptedStates, acceptedState)
+		if acceptOK {
+			// we only count confirmations as those that replied with true
+			OKs = append(OKs, acceptOK)
+		}
 	}
 	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
 
@@ -156,16 +185,17 @@ func (p *proposer) sendAccept() ([]byte, error) {
 		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
 	}
 
-	p.Lock()
-	p.state = newState
-	p.Unlock()
-	fmt.Printf("\n\n newState:%#+v\n", p.state)
-	return p.state, nil
+	err = p.stateStore.Set(key, value)
+	if err != nil {
+		return nil, acceptError(fmt.Sprintf("%v", err))
+	}
+	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
+	return value, nil
 }
 
 type acceptorState struct {
 	acceptedBallot ballot
-	acceptedValue  []byte
+	state          []byte
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
@@ -175,40 +205,100 @@ type acceptor struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex                  // protects acceptedState
-	acceptedState acceptorState // TODO: maybe?? use hashicorp/raft StableStore interface as state: https://github.com/hashicorp/raft/blob/master/stable.go
+	sync.Mutex             // protects stateStore
+	stateStore StableStore //stores ballots and state
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
-func (a *acceptor) prepare(b ballot) (acceptorState, bool, error) {
+func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
+	a.Lock()
+	defer a.Unlock()
+
+	state, err := a.stateStore.Get(key)
+	if err != nil {
+		return acceptorState{}, false, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
+	}
+
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+
+	var acceptedBallot ballot
+	dec := gob.NewDecoder(acceptedBallotReader)
+	err = dec.Decode(&acceptedBallot)
+	if err != nil {
+		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+	}
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
-	if a.acceptedState.acceptedBallot.counter > b.counter {
-		return a.acceptedState, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
+	if acceptedBallot.counter > b.counter {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
 	// TODO: this should be flushed to disk
-	a.Lock()
-	a.acceptedState.acceptedBallot = b
-	a.Unlock()
-	return a.acceptedState, true, nil
+	var ballotBuffer bytes.Buffer
+	enc := gob.NewEncoder(&ballotBuffer)
+	err = enc.Encode(b)
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
+	}
+
+	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
+	}
+	return acceptorState{acceptedBallot: b, state: state}, true, nil
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
-func (a *acceptor) accept(b ballot, newState []byte) (acceptorState, bool, error) {
-	if a.acceptedState.acceptedBallot.counter > b.counter {
-		return a.acceptedState, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, a.acceptedState.acceptedBallot, a.id))
+func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bool, error) {
+	// we still need to unlock even when using a StableStore as the store of state.
+	// this is because, someone may provide us with non-concurrent safe StableStore
+	a.Lock()
+	defer a.Unlock()
+
+	state, err := a.stateStore.Get(key)
+	if err != nil {
+		return acceptorState{}, false, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
+	}
+
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+
+	var acceptedBallot ballot
+	dec := gob.NewDecoder(acceptedBallotReader)
+	err = dec.Decode(&acceptedBallot)
+	if err != nil {
+		return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+	}
+	if acceptedBallot.counter > b.counter {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
 	// TODO: this should be flushed to disk
-	a.Lock()
-	a.acceptedState.acceptedBallot = b
-	a.acceptedState.acceptedValue = newState
-	a.Unlock()
-	return a.acceptedState, true, nil
+	var ballotBuffer bytes.Buffer
+	enc := gob.NewEncoder(&ballotBuffer)
+	err = enc.Encode(b)
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
+	}
+
+	// TODO. NB: it is possible, from the following logic, for an acceptor to accept a ballot
+	// but not accept the new state/value. ie if the call to stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
+	// but stateStore.Set(key, value) fails.
+	// we should think about the ramifications of that for a second.
+	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	if err != nil {
+		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
+	}
+	err = a.stateStore.Set(key, value)
+	if err != nil {
+		return acceptorState{acceptedBallot: b, state: state}, false, acceptError(fmt.Sprintf("%v", err))
+	}
+
+	return acceptorState{acceptedBallot: b, state: value}, true, nil
 
 }
 
