@@ -80,6 +80,24 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 	return nil
 }
 
+// Propose is the fucntion that clients call when they want to client submits
+// the f change function to a proposer.
+func (p *proposer) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	// prepare phase
+	err := p.sendPrepare(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// accept phase
+	newState, err := p.sendAccept(key, changeFunc)
+	if err != nil {
+		return nil, err
+	}
+	return newState, nil
+
+}
+
 // The proposer generates a ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.
 // Proposer waits for the F + 1 confirmations.
 // If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
