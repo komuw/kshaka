@@ -161,6 +161,8 @@ func (p *proposer) sendPrepare(key []byte) error {
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
 func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	// TODO: this locks are supposed to be per key
+	// not method wide
 	p.Lock()
 	defer p.Unlock()
 
