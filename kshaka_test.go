@@ -31,6 +31,7 @@ func Test_acceptor_accept(t *testing.T) {
 		},
 	}
 	// TODO: add more testcases
+	// TODO: fix mutex copy
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &tt.a
