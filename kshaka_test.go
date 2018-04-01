@@ -31,7 +31,7 @@ func (i *ErrInmemStore) Get(key []byte) ([]byte, error) {
 	defer i.l.RUnlock()
 	if bytes.Equal(key, []byte("unable to get state")) {
 		return i.kv[string(key)], errors.New("Get error")
-	} else if bytes.Equal(key, []byte("unable to get acceptedBallot")) {
+	} else if bytes.Equal(key, []byte("unable to get promisedBallot")) {
 		return i.kv[string(key)], errors.New("Get error")
 	}
 	return i.kv[string(key)], nil
@@ -75,17 +75,17 @@ func Test_acceptor_prepare(t *testing.T) {
 			wantedConfirmation: false,
 			wantErr:            true,
 		},
-		{name: "unable to get acceptedBallot",
+		{name: "unable to get promisedBallot",
 			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get acceptedBallot")},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get promisedBallot")},
 			wantedState:        acceptorState{},
 			wantedConfirmation: false,
 			wantErr:            true,
 		},
-		{name: "no acceptedBallot",
+		{name: "no promisedBallot",
 			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("no acceptedBallot")},
-			wantedState:        acceptorState{acceptedBallot: ballot{Counter: 1, ProposerID: 1}},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("no promisedBallot")},
+			wantedState:        acceptorState{promisedBallot: ballot{Counter: 1, ProposerID: 1}},
 			wantedConfirmation: true,
 			wantErr:            false,
 		},
