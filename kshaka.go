@@ -71,6 +71,7 @@ type proposer struct {
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 	sync.Mutex // protects state
+	// TODO: it may not be neccessary for proposers to store this much state
 	stateStore StableStore
 }
 
@@ -84,6 +85,11 @@ func newProposer() *proposer {
 func (p *proposer) addAcceptor(a *acceptor) error {
 	p.acceptors = append(p.acceptors, a)
 	return nil
+}
+
+// monotonically increase the ballot
+func (p *proposer) incBallot() {
+	p.ballot.Counter++
 }
 
 // Propose is the fucntion that clients call when they want to client submits
@@ -127,6 +133,7 @@ func (p *proposer) sendPrepare(key []byte) error {
 	OKs := []bool{}
 	var err error
 
+	p.incBallot()
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
@@ -188,17 +195,17 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	OKs := []bool{}
 	var err error
 
-	value, err := changeFunc(key, p.stateStore)
+	newState, err := changeFunc(key, p.stateStore)
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
-	// TODO: if value == nil should we save it, or return error??
+	// TODO: if newState == nil should we save it, or return error??
 	// think about this some more
 
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
-		acceptedState, acceptOK, e := a.accept(p.ballot, key, value)
+		acceptedState, acceptOK, e := a.accept(p.ballot, key, newState)
 		err = e
 		acceptedStates = append(acceptedStates, acceptedState)
 		if acceptOK {
@@ -213,12 +220,12 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", len(OKs), F+1))
 	}
 
-	err = p.stateStore.Set(key, value)
+	err = p.stateStore.Set(key, newState)
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
 	fmt.Printf("\n\n newState:%#+v\n", p.stateStore)
-	return value, nil
+	return newState, nil
 }
 
 type acceptorState struct {
