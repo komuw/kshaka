@@ -49,8 +49,8 @@ type client struct {
 // To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
 // TODO: make ballot a simple structure, like uint64, so that we dont have to use encoding/gob when saving it.
 type ballot struct {
-	counter    uint64
-	proposerID uint64
+	Counter    uint64
+	ProposerID uint64
 }
 
 // Proposers perform the initialization by communicating with acceptors.
@@ -70,7 +70,7 @@ type proposer struct {
 
 func newProposer() *proposer {
 	var proposerID uint64 = 1
-	b := ballot{counter: 1, proposerID: proposerID}
+	b := ballot{Counter: 1, ProposerID: proposerID}
 	p := proposer{id: proposerID, ballot: b}
 	return &p
 }
@@ -125,7 +125,7 @@ func (p *proposer) sendPrepare(key []byte) error {
 	// then, p.state would be equal to the default value of []byte
 	maxState := acceptorState{}
 	for _, v := range acceptedStates {
-		if v.acceptedBallot.counter > maxState.acceptedBallot.counter {
+		if v.acceptedBallot.Counter > maxState.acceptedBallot.Counter {
 			maxState = v
 		}
 	}
@@ -232,7 +232,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	}
 	// TODO: also take into account the node ID
 	// to resolve tie-breaks
-	if acceptedBallot.counter > b.counter {
+	if acceptedBallot.Counter > b.Counter {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
@@ -273,7 +273,7 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	if err != nil {
 		return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
-	if acceptedBallot.counter > b.counter {
+	if acceptedBallot.Counter > b.Counter {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 	}
 
