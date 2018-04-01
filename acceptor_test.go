@@ -69,33 +69,30 @@ func Test_acceptor_prepare(t *testing.T) {
 		wantErr            bool
 	}{
 		{name: "unable to get state",
-			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get state")},
-			wantedState:        acceptorState{},
-			wantedConfirmation: false,
-			wantErr:            true,
+			a:           acceptor{id: 1, stateStore: m},
+			args:        args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get state")},
+			wantedState: acceptorState{},
+			wantErr:     true,
 		},
 		{name: "unable to get promisedBallot",
-			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get promisedBallot")},
-			wantedState:        acceptorState{},
-			wantedConfirmation: false,
-			wantErr:            true,
+			a:           acceptor{id: 1, stateStore: m},
+			args:        args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get promisedBallot")},
+			wantedState: acceptorState{},
+			wantErr:     true,
 		},
 		{name: "no promisedBallot",
-			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("no promisedBallot")},
-			wantedState:        acceptorState{promisedBallot: ballot{Counter: 1, ProposerID: 1}},
-			wantedConfirmation: true,
-			wantErr:            false,
+			a:           acceptor{id: 1, stateStore: m},
+			args:        args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("no promisedBallot")},
+			wantedState: acceptorState{promisedBallot: ballot{Counter: 1, ProposerID: 1}},
+			wantErr:     false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &tt.a
-			acceptedState, confirmed, err := a.prepare(tt.args.b, tt.args.key)
+			acceptedState, err := a.prepare(tt.args.b, tt.args.key)
 			t.Logf("\nerror got:%#+v", err)
-			t.Logf("\nacceptedState:%#+v. confirmed:%#+v", acceptedState, confirmed)
+			t.Logf("\nacceptedState:%#+v.", acceptedState)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nacceptor.prepare() \nerror = %v, \nwantErr = %v", err, tt.wantErr)
@@ -103,9 +100,6 @@ func Test_acceptor_prepare(t *testing.T) {
 			}
 			if !reflect.DeepEqual(acceptedState, tt.wantedState) {
 				t.Errorf("\nacceptor.prepare() \nacceptedState = %v, \nwantedState = %v", acceptedState, tt.wantedState)
-			}
-			if confirmed != tt.wantedConfirmation {
-				t.Errorf("\nacceptor.prepare() \nconfirmed = %v, \nwantedConfirmation = %v", confirmed, tt.wantedConfirmation)
 			}
 		})
 	}
@@ -121,19 +115,17 @@ func Test_acceptor_accept(t *testing.T) {
 		value []byte
 	}
 	tests := []struct {
-		name               string
-		a                  acceptor
-		args               args
-		wantedState        acceptorState
-		wantedConfirmation bool
-		wantErr            bool
+		name        string
+		a           acceptor
+		args        args
+		wantedState acceptorState
+		wantErr     bool
 	}{
 		{name: "unable to get state",
-			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("foo"), value: []byte("bar")},
-			wantedState:        acceptorState{},
-			wantedConfirmation: false,
-			wantErr:            true,
+			a:           acceptor{id: 1, stateStore: m},
+			args:        args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("foo"), value: []byte("bar")},
+			wantedState: acceptorState{},
+			wantErr:     true,
 		},
 	}
 	// TODO: add more testcases
@@ -141,7 +133,7 @@ func Test_acceptor_accept(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &tt.a
-			acceptedState, confirmed, err := a.accept(tt.args.b, tt.args.key, tt.args.value)
+			acceptedState, err := a.accept(tt.args.b, tt.args.key, tt.args.value)
 			t.Logf("\nerror got:%#+v", err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nacceptor.accept() \nerror = %#+v, \nwantErr = %#+v", err, tt.wantErr)
@@ -149,33 +141,6 @@ func Test_acceptor_accept(t *testing.T) {
 			}
 			if !reflect.DeepEqual(acceptedState, tt.wantedState) {
 				t.Errorf("\nacceptor.accept() \nacceptedState = %#+v, \nwantedState = %#+v", acceptedState, tt.wantedState)
-			}
-			if confirmed != tt.wantedConfirmation {
-				t.Errorf("\nacceptor.accept() \nconfirmed = %#+v, \nwantedConfirmation = %#+v", confirmed, tt.wantedConfirmation)
-			}
-		})
-	}
-}
-
-func Test_proposer_incBallot(t *testing.T) {
-	kv := map[string][]byte{"foo": []byte("bar")}
-	m := &InmemStore{kv: kv}
-
-	tests := []struct {
-		name string
-		p    proposer
-	}{
-		{name: "increment ballot", p: proposer{id: 1, stateStore: m}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := &tt.p
-			p.incBallot()
-			p.incBallot()
-			p.incBallot()
-
-			if p.ballot.Counter != 3 {
-				t.Errorf("\n p.incBallot() *3 \ngot = %#+v, \nwanted = %#+v", p.ballot.Counter, 3)
 			}
 		})
 	}
