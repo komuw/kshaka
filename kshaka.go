@@ -92,6 +92,10 @@ func (p *proposer) sendPrepare(key []byte) error {
 	if noAcceptors < minimumNoAcceptors {
 		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
+	if bytes.Equal(key, acceptedBallotKey) {
+		return prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	}
+
 	// number of failures we can tolerate:
 	F := (noAcceptors - 1) / 2
 
@@ -140,7 +144,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	p.Lock()
 	defer p.Unlock()
 
-	// probably we shouldn't call this method if we havent called prepare yet and it is finished
+	// probably we shouldn't call this method, sendAccept, if we havent called prepare yet and it is finished
 	noAcceptors := len(p.acceptors)
 	if noAcceptors < minimumNoAcceptors {
 		return nil, acceptError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
@@ -165,9 +169,12 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
 		acceptedState, acceptOK, e := a.accept(p.ballot, key, value)
-		acceptedStates = append(acceptedStates, acceptedState)
-		OKs = append(OKs, acceptOK)
 		err = e
+		acceptedStates = append(acceptedStates, acceptedState)
+		if acceptOK {
+			// we only count confirmations as those that replied with true
+			OKs = append(OKs, acceptOK)
+		}
 	}
 	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
 
