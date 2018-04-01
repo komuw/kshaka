@@ -15,11 +15,6 @@ jobs:
                 apt-get -y update
                 apt -y install \
                             curl \
-                            wget \
-                            git \
-                            python \
-                            software-properties-common \
-                            build-essential \
                             nano
 
         - run:
@@ -70,11 +65,6 @@ jobs:
 #                 apt-get -y update
 #                 apt -y install \
 #                             curl \
-#                             wget \
-#                             git \
-#                             python \
-#                             software-properties-common \
-#                             build-essential \
 #                             nano
   
 #         - run:
