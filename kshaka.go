@@ -98,9 +98,12 @@ func (p *proposer) sendPrepare(key []byte) error {
 		fmt.Printf("acceptor %#+v\n", a)
 		//TODO: call prepare concurrently
 		acceptedState, prepareOK, e := a.prepare(p.ballot, key)
-		acceptedStates = append(acceptedStates, acceptedState)
-		OKs = append(OKs, prepareOK)
 		err = e
+		acceptedStates = append(acceptedStates, acceptedState)
+		if prepareOK {
+			// we only count confirmations as those that replied with true
+			OKs = append(OKs, prepareOK)
+		}
 	}
 	fmt.Println("acceptedStates, OKs, err, F", acceptedStates, OKs, err, F)
 
