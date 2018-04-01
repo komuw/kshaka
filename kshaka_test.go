@@ -1,6 +1,7 @@
 package kshaka
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"sync"
@@ -25,7 +26,12 @@ func (i *ErrInmemStore) Set(key []byte, val []byte) error {
 func (i *ErrInmemStore) Get(key []byte) ([]byte, error) {
 	i.l.RLock()
 	defer i.l.RUnlock()
-	return i.kv[string(key)], errors.New("Get error")
+	if bytes.Equal(key, []byte("unable to get state")) {
+		return i.kv[string(key)], errors.New("Get error")
+	} else if bytes.Equal(key, []byte("unable to get acceptedBallot")) {
+		return i.kv[string(key)], errors.New("Get error")
+	}
+	return i.kv[string(key)], nil
 }
 
 // SetUint64 implements the StableStore interface.
@@ -61,7 +67,14 @@ func Test_acceptor_prepare(t *testing.T) {
 	}{
 		{name: "unable to get state",
 			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("ok")},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get state")},
+			wantedState:        acceptorState{},
+			wantedConfirmation: false,
+			wantErr:            true,
+		},
+		{name: "unable to get acceptedBallot",
+			a:                  acceptor{id: 1, stateStore: m},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("unable to get acceptedBallot")},
 			wantedState:        acceptorState{},
 			wantedConfirmation: false,
 			wantErr:            true,
