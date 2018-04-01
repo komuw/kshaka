@@ -242,18 +242,22 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	}
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
-	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
-
-	var acceptedBallot ballot
-	dec := gob.NewDecoder(acceptedBallotReader)
-	err = dec.Decode(&acceptedBallot)
 	if err != nil {
 		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
-	// TODO: also take into account the node ID
-	// to resolve tie-breaks
-	if acceptedBallot.Counter > b.Counter {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+	var acceptedBallot ballot
+	if !bytes.Equal(acceptedBallotBytes, nil) {
+		// ie we found an accepted ballot
+		acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
+		dec := gob.NewDecoder(acceptedBallotReader)
+		err = dec.Decode(&acceptedBallot)
+		if err != nil {
+			return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
+		}
+		// TODO: also take into account the node ID to resolve tie-breaks
+		if acceptedBallot.Counter > b.Counter {
+			return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
+		}
 	}
 
 	// TODO: this should be flushed to disk
@@ -295,13 +299,13 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	if !bytes.Equal(acceptedBallotBytes, nil) {
 		// ie we found an accepted ballot
 		acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
-
 		dec := gob.NewDecoder(acceptedBallotReader)
 		err = dec.Decode(&acceptedBallot)
 		if err != nil {
 			fmt.Printf("\n\n err: %#+v", err)
 			return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 		}
+		// TODO: also take into account the node ID to resolve tie-breaks
 		if acceptedBallot.Counter > b.Counter {
 			return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.id))
 		}

@@ -5,6 +5,49 @@ import (
 	"testing"
 )
 
+func Test_acceptor_prepare(t *testing.T) {
+	kv := map[string][]byte{"foo": []byte("bar")}
+	m := &InmemStore{kv: kv}
+
+	type args struct {
+		b   ballot
+		key []byte
+	}
+	tests := []struct {
+		name               string
+		a                  acceptor
+		args               args
+		wantedState        acceptorState
+		wantedConfirmation bool
+		wantErr            bool
+	}{
+		{name: "unable to get state",
+			a:                  acceptor{id: 1, stateStore: m},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("notFound")},
+			wantedState:        acceptorState{},
+			wantedConfirmation: false,
+			wantErr:            true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &tt.a
+			acceptedState, confirmed, err := a.prepare(tt.args.b, tt.args.key)
+			t.Logf("\nerror got:%#+v", err)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nacceptor.prepare() \nerror = %v, \nwantErr = %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(acceptedState, tt.wantedState) {
+				t.Errorf("\nacceptor.prepare() \nacceptedState = %v, \nwantedState = %v", acceptedState, tt.wantedState)
+			}
+			if confirmed != tt.wantedConfirmation {
+				t.Errorf("\nacceptor.prepare() \nconfirmed = %v, \nwantedConfirmation = %v", confirmed, tt.wantedConfirmation)
+			}
+		})
+	}
+}
+
 func Test_acceptor_accept(t *testing.T) {
 	kv := map[string][]byte{"foo": []byte("bar")}
 	m := &InmemStore{kv: kv}
