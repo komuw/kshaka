@@ -19,7 +19,10 @@ func (i *ErrInmemStore) Set(key []byte, val []byte) error {
 	i.l.Lock()
 	defer i.l.Unlock()
 	i.kv[string(key)] = val
-	return errors.New("Set error")
+	if bytes.Equal(key, []byte("unable to set state")) {
+		return errors.New("Set error")
+	}
+	return nil
 }
 
 // Get implements the StableStore interface.
@@ -78,6 +81,13 @@ func Test_acceptor_prepare(t *testing.T) {
 			wantedState:        acceptorState{},
 			wantedConfirmation: false,
 			wantErr:            true,
+		},
+		{name: "no acceptedBallot",
+			a:                  acceptor{id: 1, stateStore: m},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("no acceptedBallot")},
+			wantedState:        acceptorState{acceptedBallot: ballot{Counter: 1, ProposerID: 1}},
+			wantedConfirmation: true,
+			wantErr:            false,
 		},
 	}
 	for _, tt := range tests {
