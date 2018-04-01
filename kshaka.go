@@ -184,6 +184,10 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
+	// TODO: think about this some more
+	if value == nil {
+		return nil, acceptError(fmt.Sprintf("it is illegal to set a nil state for any key. key:%v", key))
+	}
 
 	for _, a := range p.acceptors {
 		fmt.Printf("acceptor %#+v\n", a)
@@ -238,6 +242,10 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 	if err != nil {
 		return acceptorState{}, false, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
+	// TODO: think about this some more
+	if state == nil {
+		return acceptorState{}, false, prepareError(fmt.Sprintf("nil state for key:%v from acceptor:%v", key, a.id))
+	}
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
 	acceptedBallotReader := bytes.NewReader(acceptedBallotBytes)
@@ -280,6 +288,10 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	state, err := a.stateStore.Get(key)
 	if err != nil {
 		return acceptorState{}, false, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
+	}
+	// TODO: think about this some more
+	if state == nil {
+		return acceptorState{}, false, acceptError(fmt.Sprintf("nil state for key:%v from acceptor:%v", key, a.id))
 	}
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)

@@ -36,6 +36,7 @@ func Test_acceptor_accept(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &tt.a
 			acceptedState, confirmed, err := a.accept(tt.args.b, tt.args.key, tt.args.value)
+			t.Logf("\nerr:%#+v", err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nacceptor.accept() \nerror = %#+v, \nwantErr = %#+v", err, tt.wantErr)
 				return
