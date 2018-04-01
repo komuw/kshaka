@@ -27,7 +27,9 @@ const minimumNoAcceptors = 3
 
 // acceptedBallotKey is the key that we use to store the value of the current accepted ballot.
 // it ought to be unique and clients/users will be prohibited from using this value as a key for their data.
-var acceptedBallotKey = []byte("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e__")
+func acceptedBallotKey(key []byte) []byte {
+	return []byte(fmt.Sprintf("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e.%s", key))
+}
 
 type prepareError string
 
@@ -110,8 +112,8 @@ func (p *proposer) sendPrepare(key []byte) error {
 	if noAcceptors < minimumNoAcceptors {
 		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
-	if bytes.Equal(key, acceptedBallotKey) {
-		return prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	if bytes.Equal(key, acceptedBallotKey(key)) {
+		return prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
 	// number of failures we can tolerate:
@@ -171,8 +173,8 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 	if noAcceptors < minimumNoAcceptors {
 		return nil, acceptError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
-	if bytes.Equal(key, acceptedBallotKey) {
-		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey))
+	if bytes.Equal(key, acceptedBallotKey(key)) {
+		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
 	// number of failures we can tolerate:
@@ -243,7 +245,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 		return acceptorState{}, false, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
 
-	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey(key))
 	if err != nil {
 		// TODO: propagate the underlying error
 		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
@@ -271,7 +273,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
 	}
 
-	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	err = a.stateStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, prepareError(fmt.Sprintf("%v", err))
 	}
@@ -291,7 +293,7 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 		return acceptorState{}, false, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
 
-	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
+	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey(key))
 	if err != nil {
 		return acceptorState{state: state}, false, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
@@ -325,7 +327,7 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, bo
 	// but not accept the new state/value. ie if the call to stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
 	// but stateStore.Set(key, value) fails.
 	// we should think about the ramifications of that for a second.
-	err = a.stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes())
+	err = a.stateStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, false, acceptError(fmt.Sprintf("%v", err))
 	}
