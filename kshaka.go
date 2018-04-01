@@ -243,6 +243,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, bool, error) {
 
 	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey)
 	if err != nil {
+		// TODO: propagate the underlying error
 		return acceptorState{state: state}, false, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
 	var acceptedBallot ballot

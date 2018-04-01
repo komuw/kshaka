@@ -1,6 +1,8 @@
 package kshaka
 
-import "sync"
+import (
+	"sync"
+)
 
 // InmemStore implements the StableStore interface.
 // It should NOT EVER be used for production. It is used only for unit tests.

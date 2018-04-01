@@ -1,13 +1,51 @@
 package kshaka
 
 import (
+	"errors"
 	"reflect"
+	"sync"
 	"testing"
 )
 
+type ErrInmemStore struct {
+	l     sync.RWMutex
+	kv    map[string][]byte
+	kvInt map[string]uint64
+}
+
+// Set implements the StableStore interface.
+func (i *ErrInmemStore) Set(key []byte, val []byte) error {
+	i.l.Lock()
+	defer i.l.Unlock()
+	i.kv[string(key)] = val
+	return errors.New("Set error")
+}
+
+// Get implements the StableStore interface.
+func (i *ErrInmemStore) Get(key []byte) ([]byte, error) {
+	i.l.RLock()
+	defer i.l.RUnlock()
+	return i.kv[string(key)], errors.New("Get error")
+}
+
+// SetUint64 implements the StableStore interface.
+func (i *ErrInmemStore) SetUint64(key []byte, val uint64) error {
+	i.l.Lock()
+	defer i.l.Unlock()
+	i.kvInt[string(key)] = val
+	return errors.New("SetUint64 error")
+}
+
+// GetUint64 implements the StableStore interface.
+func (i *ErrInmemStore) GetUint64(key []byte) (uint64, error) {
+	i.l.RLock()
+	defer i.l.RUnlock()
+	return i.kvInt[string(key)], errors.New("GetUint64 error")
+}
+
 func Test_acceptor_prepare(t *testing.T) {
 	kv := map[string][]byte{"foo": []byte("bar")}
-	m := &InmemStore{kv: kv}
+	m := &ErrInmemStore{kv: kv}
 
 	type args struct {
 		b   ballot
@@ -23,7 +61,7 @@ func Test_acceptor_prepare(t *testing.T) {
 	}{
 		{name: "unable to get state",
 			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("notFound")},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("ok")},
 			wantedState:        acceptorState{},
 			wantedConfirmation: false,
 			wantErr:            true,
@@ -34,6 +72,8 @@ func Test_acceptor_prepare(t *testing.T) {
 			a := &tt.a
 			acceptedState, confirmed, err := a.prepare(tt.args.b, tt.args.key)
 			t.Logf("\nerror got:%#+v", err)
+			t.Logf("\nacceptedState:%#+v. confirmed:%#+v", acceptedState, confirmed)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("\nacceptor.prepare() \nerror = %v, \nwantErr = %v", err, tt.wantErr)
 				return
@@ -67,7 +107,7 @@ func Test_acceptor_accept(t *testing.T) {
 	}{
 		{name: "unable to get state",
 			a:                  acceptor{id: 1, stateStore: m},
-			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("notFound"), value: []byte("bar")},
+			args:               args{b: ballot{Counter: 1, ProposerID: 1}, key: []byte("foo"), value: []byte("bar")},
 			wantedState:        acceptorState{},
 			wantedConfirmation: false,
 			wantErr:            true,
