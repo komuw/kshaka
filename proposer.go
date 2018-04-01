@@ -89,8 +89,8 @@ func (p *proposer) sendPrepare(key []byte) error {
 		confirmationsNeeded = F + 1
 		highBallotConflict  ballot
 		acceptedState       []byte
-		noConflicts         int
-		noConfirmations     int
+		numberConflicts     int
+		numberConfirmations int
 	)
 
 	if noAcceptors < minimumNoAcceptors {
@@ -117,7 +117,7 @@ func (p *proposer) sendPrepare(key []byte) error {
 		res := <-prepareResultChan
 		if res.err != nil {
 			// conflict occured
-			noConflicts++
+			numberConflicts++
 			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
 				highBallotConflict = res.acceptedState.acceptedBallot
 			} else if res.acceptedState.promisedBallot.Counter > p.ballot.Counter {
@@ -125,7 +125,7 @@ func (p *proposer) sendPrepare(key []byte) error {
 			}
 		} else {
 			// confirmation occured.
-			noConfirmations++
+			numberConfirmations++
 			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
 				acceptedState = res.acceptedState.state
 			}
@@ -134,9 +134,9 @@ func (p *proposer) sendPrepare(key []byte) error {
 	}
 
 	// we didn't get F+1 confirmations
-	if noConfirmations < confirmationsNeeded {
+	if numberConfirmations < confirmationsNeeded {
 		p.ballot.Counter = highBallotConflict.Counter + 1
-		return prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", noConfirmations, confirmationsNeeded))
+		return prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
 	err := p.stateStore.Set(key, acceptedState)
@@ -159,8 +159,9 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		noAcceptors         = len(p.acceptors)
 		F                   = (noAcceptors - 1) / 2 // number of failures we can tolerate
 		confirmationsNeeded = F + 1
-		noConflicts         int
-		noConfirmations     int
+		highBallotConflict  ballot
+		numberConflicts     int
+		numberConfirmations int
 	)
 
 	// probably we shouldn't call this method, sendAccept, if we havent called prepare yet and it is finished
@@ -194,17 +195,23 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		res := <-acceptResultChan
 		if res.err != nil {
 			// conflict occured
-			noConflicts++
+			numberConflicts++
+			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
+				highBallotConflict = res.acceptedState.acceptedBallot
+			} else if res.acceptedState.promisedBallot.Counter > p.ballot.Counter {
+				highBallotConflict = res.acceptedState.promisedBallot
+			}
 		} else {
 			// confirmation occured.
-			noConfirmations++
+			numberConfirmations++
 			confirmationsNeeded--
 		}
 	}
 
 	// we didn't get F+1 confirmations
-	if noConfirmations < confirmationsNeeded {
-		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", noConfirmations, confirmationsNeeded))
+	if numberConfirmations < confirmationsNeeded {
+		p.ballot.Counter = highBallotConflict.Counter + 1
+		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
 	err = p.stateStore.Set(key, newState)
