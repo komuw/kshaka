@@ -9,6 +9,9 @@ func Test_proposer_Propose(t *testing.T) {
 	kv := map[string][]byte{"foo": []byte("bar")}
 	m := &InmemStore{kv: kv}
 
+	kv2 := map[string][]byte{"": []byte("")}
+	acceptorStore := &InmemStore{kv: kv2}
+
 	var readFunc ChangeFunction = func(key []byte, current StableStore) ([]byte, error) {
 		value, err := current.Get(key)
 		return value, err
@@ -54,6 +57,13 @@ func Test_proposer_Propose(t *testing.T) {
 			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}},
 			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("stephen"), []byte("hawking"))},
 			want:    []byte("hawking"),
+			wantErr: false,
+		},
+
+		{name: "enough acceptors setFunc. acceptor with own stores",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
+			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("bob"), []byte("marley"))},
+			want:    []byte("marley"),
 			wantErr: false,
 		},
 	}
