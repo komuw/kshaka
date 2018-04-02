@@ -9,9 +9,13 @@ and doesn't cause transient unavailability when any [N−1] of N nodes crash." -
 
 Example usage:
 
+	// create a store that will be used. Ideally it should be a disk persisted store.
+	// any store that implements hashicorp/raft StableStore interface will suffice
 	kv := map[string][]byte{"foo": []byte("bar")}
 	sStore := &InmemStore{kv: kv}
 
+	// the function that will be applied by CASPaxos.
+	// this one sets a key-val pair
 	var setFunc = func(key []byte, val []byte) ChangeFunction {
 		return func(key []byte, current StableStore) ([]byte, error) {
 			err := current.Set(key, val)
@@ -19,6 +23,7 @@ Example usage:
 		}
 	}
 
+	// create a proposer with a list of acceptors
 	p := &proposer{id: 1,
 		ballot:     ballot{Counter: 1, ProposerID: 1},
 		stateStore: sStore,
@@ -30,6 +35,7 @@ Example usage:
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
+	// make a proposition; consensus via CASPaxos will happen and you will have your result back.
 	newstate, err := p.Propose(key, setFunc(key, val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
