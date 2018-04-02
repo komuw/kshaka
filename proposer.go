@@ -7,6 +7,36 @@ it doesn’t use leader election and log replication, thus avoiding associated c
 Its symmetric peer-to-peer approach achieves optimal commit latency in wide-area networks
 and doesn’t cause transient unavailability when any [N−1] of N nodes crash." - [The CASPaxos whitepaper](https://github.com/rystsov/caspaxos/blob/master/latex/caspaxos.pdf)
 
+Example usage:
+
+	kv := map[string][]byte{"foo": []byte("bar")}
+	sStore := &InmemStore{kv: kv}
+
+	var setFunc = func(key []byte, val []byte) ChangeFunction {
+		return func(key []byte, current StableStore) ([]byte, error) {
+			err := current.Set(key, val)
+			return val, err
+		}
+	}
+
+	p := &proposer{id: 1,
+		ballot:     ballot{Counter: 1, ProposerID: 1},
+		stateStore: sStore,
+		acceptors: []*acceptor{&acceptor{id: 1, stateStore: sStore},
+			&acceptor{id: 2, stateStore: sStore},
+			&acceptor{id: 3, stateStore: sStore},
+			&acceptor{id: 4, stateStore: sStore}}}
+
+	key := []byte("name")
+	val := []byte("Masta-Ace")
+
+	newstate, err := p.Propose(key, setFunc(key, val))
+	if err != nil {
+		fmt.Printf("err: %v", err)
+	}
+	fmt.Printf("newstate: %v", newstate)
+
+
 TODO: add system design here.
 */
 package kshaka

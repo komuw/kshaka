@@ -7,17 +7,17 @@ import (
 
 func Test_proposer_Propose(t *testing.T) {
 	kv := map[string][]byte{"foo": []byte("bar")}
-	m := &ErrInmemStore{kv: kv}
+	m := &InmemStore{kv: kv}
 
 	var readFunc ChangeFunction = func(key []byte, current StableStore) ([]byte, error) {
 		value, err := current.Get(key)
 		return value, err
 	}
 
-	var setFunc = func(k []byte, v []byte) ChangeFunction {
+	var setFunc = func(key []byte, val []byte) ChangeFunction {
 		return func(key []byte, current StableStore) ([]byte, error) {
-			err := current.Set(k, v)
-			return v, err
+			err := current.Set(key, val)
+			return val, err
 		}
 	}
 
