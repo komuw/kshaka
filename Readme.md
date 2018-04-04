@@ -63,3 +63,9 @@ C. End
 
 ### 5. Optimizations
 - todo          
+
+# dev
+debug one test;     
+```
+dlv test -- -test.v -test.run ^Test_proposer_Propose
+```
