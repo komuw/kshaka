@@ -17,16 +17,14 @@ Example usage:
 	// the function that will be applied by CASPaxos.
 	// this one sets a key-val pair
 	var setFunc = func(key []byte, val []byte) ChangeFunction {
-		return func(key []byte, current StableStore) ([]byte, error) {
-			err := current.Set(key, val)
-			return val, err
+		return func(key []byte, current []byte) ([]byte, error) {
+			return val, nil
 		}
 	}
 
 	// create a proposer with a list of acceptors
 	p := &proposer{id: 1,
 		ballot:     ballot{Counter: 1, ProposerID: 1},
-		stateStore: sStore,
 		acceptors: []*acceptor{&acceptor{id: 1, stateStore: sStore},
 			&acceptor{id: 2, stateStore: sStore},
 			&acceptor{id: 3, stateStore: sStore},
@@ -77,8 +75,7 @@ type proposer struct {
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 	sync.Mutex // protects state
-	// TODO: it may not be neccessary for proposers to store this much state
-	// stateStore StableStore
+	// TODO: We probably do not need this mutex??
 }
 
 func newProposer() *proposer {
@@ -177,10 +174,6 @@ func (p *proposer) sendPrepare(key []byte) ([]byte, error) {
 		return nil, prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
-	// err := p.stateStore.Set(key, acceptedState)
-	// if err != nil {
-	// 	return prepareError(fmt.Sprintf("%v", err))
-	// }
 	return currentState, nil
 }
 
@@ -260,9 +253,5 @@ func (p *proposer) sendAccept(key []byte, currentState []byte, changeFunc Change
 		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
-	// err = p.stateStore.Set(key, newState)
-	// if err != nil {
-	// 	return nil, acceptError(fmt.Sprintf("%v", err))
-	// }
 	return newState, nil
 }
