@@ -123,8 +123,9 @@ func (p *proposer) sendPrepare(key []byte) ([]byte, error) {
 		noAcceptors         = len(p.acceptors)
 		F                   = (noAcceptors - 1) / 2 // number of failures we can tolerate
 		confirmationsNeeded = F + 1
-		highBallotConflict  ballot
-		acceptedState       []byte
+		highBallotConfirm   ballot
+		highBallotConflict  = p.ballot
+		currentState        []byte
 		numberConflicts     int
 		numberConfirmations int
 	)
@@ -154,16 +155,17 @@ func (p *proposer) sendPrepare(key []byte) ([]byte, error) {
 		if res.err != nil {
 			// conflict occured
 			numberConflicts++
-			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
+			if res.acceptedState.acceptedBallot.Counter > highBallotConflict.Counter {
 				highBallotConflict = res.acceptedState.acceptedBallot
-			} else if res.acceptedState.promisedBallot.Counter > p.ballot.Counter {
+			} else if res.acceptedState.promisedBallot.Counter > highBallotConflict.Counter {
 				highBallotConflict = res.acceptedState.promisedBallot
 			}
 		} else {
 			// confirmation occured.
 			numberConfirmations++
-			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
-				acceptedState = res.acceptedState.state
+			if res.acceptedState.acceptedBallot.Counter >= highBallotConfirm.Counter {
+				highBallotConfirm = res.acceptedState.acceptedBallot
+				currentState = res.acceptedState.state
 			}
 			confirmationsNeeded--
 		}
@@ -179,7 +181,7 @@ func (p *proposer) sendPrepare(key []byte) ([]byte, error) {
 	// if err != nil {
 	// 	return prepareError(fmt.Sprintf("%v", err))
 	// }
-	return acceptedState, nil
+	return currentState, nil
 }
 
 // Proposer applies the f function to the current state and sends the result, new state,
