@@ -111,15 +111,15 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, error) {
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
 func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, error) {
-	// we still need to unlock even when using a StableStore as the store of state.
-	// this is because, someone may provide us with non-concurrent safe StableStore
-
 	/*
 		Yes, acceptors should store tuple (promised ballot, accepted ballot and an accepted value) per key.
 		Proposers, unlike acceptors, may use the same ballot number sequence.
 		If we split a sequence of unique and increasing ballot numbers into several subsequences then any of them remains unique and increasing, so it's fine.
 		- Rystsov
 	*/
+
+	// we still need to unlock even when using a StableStore as the store of state.
+	// this is because, someone may provide us with non-concurrent safe StableStore
 	a.Lock()
 	defer a.Unlock()
 
