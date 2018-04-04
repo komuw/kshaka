@@ -12,12 +12,12 @@ func Test_proposer_Propose(t *testing.T) {
 	kv2 := map[string][]byte{"Bob": []byte("Marley")}
 	acceptorStore2 := &InmemStore{kv: kv2}
 
-	var readFunc ChangeFunction = func(key []byte, current []byte) ([]byte, error) {
+	var readFunc ChangeFunction = func(current []byte) ([]byte, error) {
 		return current, nil
 	}
 
-	var setFunc = func(key []byte, val []byte) ChangeFunction {
-		return func(key []byte, current []byte) ([]byte, error) {
+	var setFunc = func(val []byte) ChangeFunction {
+		return func(current []byte) ([]byte, error) {
 			return val, nil
 		}
 	}
@@ -59,7 +59,7 @@ func Test_proposer_Propose(t *testing.T) {
 		},
 		{name: "enough acceptors setFunc",
 			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
-			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("stephen"), []byte("hawking"))},
+			args:    args{key: []byte("stephen"), changeFunc: setFunc([]byte("hawking"))},
 			want:    []byte("hawking"),
 			wantErr: false,
 		},

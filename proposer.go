@@ -16,8 +16,8 @@ Example usage:
 
 	// the function that will be applied by CASPaxos.
 	// this one sets a key-val pair
-	var setFunc = func(key []byte, val []byte) ChangeFunction {
-		return func(key []byte, current []byte) ([]byte, error) {
+	var setFunc = func(val []byte) ChangeFunction {
+		return func(current []byte) ([]byte, error) {
 			return val, nil
 		}
 	}
@@ -92,6 +92,8 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 
 // Propose is the fucntion that clients call when they want to client submits
 // the f change function to a proposer.
+// It takes the key whose value you want to apply the ChangeFunction to and
+// the ChangeFunction that will be applied to the value(contents) of the key.
 func (p *proposer) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// prepare phase
 	currentState, err := p.sendPrepare(key)
@@ -211,7 +213,7 @@ func (p *proposer) sendAccept(key []byte, currentState []byte, changeFunc Change
 		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
-	newState, err := changeFunc(key, currentState)
+	newState, err := changeFunc(currentState)
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
