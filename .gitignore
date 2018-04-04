@@ -1,6 +1,7 @@
 .vscode/*
 debug
 debug.test
+kshaka.test
 
 # go-pry debug stuff
 .main.gopry
