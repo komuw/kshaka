@@ -14,8 +14,8 @@ Example usage:
 	kv := map[string][]byte{"foo": []byte("bar")}
 	sStore := &InmemStore{kv: kv}
 
-	// the function that will be applied by CASPaxos.
-	// this will be applied to the current value stored under the key passed into the Propose method of the proposer.
+	// The function that will be applied by CASPaxos. This will be applied to the
+	// current value stored under the key passed into the Propose method of the proposer.
 	var setFunc = func(val []byte) ChangeFunction {
 		return func(current []byte) ([]byte, error) {
 			return val, nil
@@ -33,7 +33,8 @@ Example usage:
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	// make a proposition; consensus via CASPaxos will happen and you will have your result back.
+	// make a proposition;
+	// consensus via CASPaxos will happen and you will have your result back.
 	newstate, err := p.Propose(key, setFunc(key, val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
