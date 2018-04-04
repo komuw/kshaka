@@ -5,14 +5,12 @@ import (
 )
 
 func Test_proposer_incBallot(t *testing.T) {
-	kv := map[string][]byte{"foo": []byte("bar")}
-	m := &InmemStore{kv: kv}
 
 	tests := []struct {
 		name string
 		p    proposer
 	}{
-		{name: "increment ballot", p: proposer{id: 1, stateStore: m}},
+		{name: "increment ballot", p: proposer{id: 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
