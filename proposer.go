@@ -15,7 +15,7 @@ Example usage:
 	sStore := &InmemStore{kv: kv}
 
 	// the function that will be applied by CASPaxos.
-	// this one sets a key-val pair
+	// this will be applied to the current value stored under the key passed into the Propose method of the proposer.
 	var setFunc = func(val []byte) ChangeFunction {
 		return func(current []byte) ([]byte, error) {
 			return val, nil
