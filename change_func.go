@@ -15,4 +15,6 @@ A client can send the above change function to a proposer, when the client wants
 at a key named foo. The proposer will apply that function to the current state of the StableStore and return
 the value stored at that key and an error.
 */
-type ChangeFunction func(key []byte, currentState StableStore) ([]byte, error)
+
+// type ChangeFunction func(key []byte, currentState StableStore) ([]byte, error)
+type ChangeFunction func(key []byte, currentState []byte) ([]byte, error)

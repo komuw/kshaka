@@ -78,7 +78,7 @@ type proposer struct {
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 	sync.Mutex // protects state
 	// TODO: it may not be neccessary for proposers to store this much state
-	stateStore StableStore
+	// stateStore StableStore
 }
 
 func newProposer() *proposer {
@@ -97,13 +97,13 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 // the f change function to a proposer.
 func (p *proposer) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// prepare phase
-	err := p.sendPrepare(key)
+	currentState, err := p.sendPrepare(key)
 	if err != nil {
 		return nil, err
 	}
 
 	// accept phase
-	newState, err := p.sendAccept(key, changeFunc)
+	newState, err := p.sendAccept(key, currentState, changeFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (p *proposer) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error
 // Proposer waits for the F + 1 confirmations.
 // If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
 // otherwise it picks the value of the tuple with the highest ballot number.
-func (p *proposer) sendPrepare(key []byte) error {
+func (p *proposer) sendPrepare(key []byte) ([]byte, error) {
 	p.Lock()
 	defer p.Unlock()
 
@@ -130,10 +130,10 @@ func (p *proposer) sendPrepare(key []byte) error {
 	)
 
 	if noAcceptors < minimumNoAcceptors {
-		return prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
+		return nil, prepareError(fmt.Sprintf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors))
 	}
 	if bytes.Equal(key, acceptedBallotKey(key)) {
-		return prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
+		return nil, prepareError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
 	p.incBallot()
@@ -172,21 +172,21 @@ func (p *proposer) sendPrepare(key []byte) error {
 	// we didn't get F+1 confirmations
 	if numberConfirmations < confirmationsNeeded {
 		p.ballot.Counter = highBallotConflict.Counter + 1
-		return prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
+		return nil, prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
-	err := p.stateStore.Set(key, acceptedState)
-	if err != nil {
-		return prepareError(fmt.Sprintf("%v", err))
-	}
-	return nil
+	// err := p.stateStore.Set(key, acceptedState)
+	// if err != nil {
+	// 	return prepareError(fmt.Sprintf("%v", err))
+	// }
+	return acceptedState, nil
 }
 
 // Proposer applies the f function to the current state and sends the result, new state,
 // along with the generated ballot number B (an ”accept” message) to the acceptors.
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
-func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+func (p *proposer) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// TODO: this locks are supposed to be per key
 	// not method wide
 	p.Lock()
@@ -208,7 +208,7 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		return nil, acceptError(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
-	newState, err := changeFunc(key, p.stateStore)
+	newState, err := changeFunc(key, currentState)
 	if err != nil {
 		return nil, acceptError(fmt.Sprintf("%v", err))
 	}
@@ -250,9 +250,9 @@ func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, er
 		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
-	err = p.stateStore.Set(key, newState)
-	if err != nil {
-		return nil, acceptError(fmt.Sprintf("%v", err))
-	}
+	// err = p.stateStore.Set(key, newState)
+	// if err != nil {
+	// 	return nil, acceptError(fmt.Sprintf("%v", err))
+	// }
 	return newState, nil
 }
