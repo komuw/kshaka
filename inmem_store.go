@@ -5,7 +5,7 @@ import (
 )
 
 // InmemStore implements the StableStore interface.
-// It should NOT EVER be used for production. It is used only for unit tests.
+// It should  NEVER be used for production. It is used only for unit tests.
 // Use the github.com/hashicorp/raft-mdb implementation instead.
 // This InmemStore is based on the one defined in hashicorp/raft; with the difference been that
 // this only satisfies the StableStore interface whereas the hashicorp/raft one also satisfies the LogStore interface.

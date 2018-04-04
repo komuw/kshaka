@@ -91,10 +91,10 @@ func (p *proposer) addAcceptor(a *acceptor) error {
 	return nil
 }
 
-// Propose is the fucntion that clients call when they want to client submits
+// Propose is the method that clients call when they want to submit
 // the f change function to a proposer.
 // It takes the key whose value you want to apply the ChangeFunction to and
-// the ChangeFunction that will be applied to the value(contents) of the key.
+// also the ChangeFunction that will be applied to the value(contents) of the key.
 func (p *proposer) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// prepare phase
 	currentState, err := p.sendPrepare(key)
