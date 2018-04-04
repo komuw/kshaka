@@ -187,6 +187,13 @@ func (p *proposer) sendPrepare(key []byte) error {
 // Proposer waits for the F + 1 confirmations.
 // Proposer returns the new state to the client.
 func (p *proposer) sendAccept(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	/*
+		Yes, acceptors should store tuple (promised ballot, accepted ballot and an accepted value) per key.
+		Proposers, unlike acceptors, may use the same ballot number sequence.
+		If we split a sequence of unique and increasing ballot numbers into several subsequences then any of them remains unique and increasing, so it's fine.
+		- Rystsov
+	*/
+
 	// TODO: this locks are supposed to be per key
 	// not method wide
 	p.Lock()
