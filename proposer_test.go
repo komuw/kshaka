@@ -6,21 +6,19 @@ import (
 )
 
 func Test_proposer_Propose(t *testing.T) {
-	kv := map[string][]byte{"foo": []byte("bar")}
-	m := &InmemStore{kv: kv}
+	kv := map[string][]byte{"": []byte("")}
+	acceptorStore := &InmemStore{kv: kv}
 
-	kv2 := map[string][]byte{"": []byte("")}
-	acceptorStore := &InmemStore{kv: kv2}
+	kv2 := map[string][]byte{"Bob": []byte("Marley")}
+	acceptorStore2 := &InmemStore{kv: kv2}
 
-	var readFunc ChangeFunction = func(key []byte, current StableStore) ([]byte, error) {
-		value, err := current.Get(key)
-		return value, err
+	var readFunc ChangeFunction = func(key []byte, current []byte) ([]byte, error) {
+		return current, nil
 	}
 
 	var setFunc = func(key []byte, val []byte) ChangeFunction {
-		return func(key []byte, current StableStore) ([]byte, error) {
-			err := current.Set(key, val)
-			return val, err
+		return func(key []byte, current []byte) ([]byte, error) {
+			return val, nil
 		}
 	}
 
@@ -36,34 +34,33 @@ func Test_proposer_Propose(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "no acceptors",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m},
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
 		{name: "two acceptors",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}}},
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
-		{name: "enough acceptors readFunc",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}},
+		{name: "enough acceptors readFunc no key set",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: false,
 		},
-		{name: "enough acceptors setFunc",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: m}, &acceptor{id: 2, stateStore: m}, &acceptor{id: 3, stateStore: m}, &acceptor{id: 4, stateStore: m}}},
-			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("stephen"), []byte("hawking"))},
-			want:    []byte("hawking"),
+		{name: "enough acceptors readFunc with key set",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore2}, &acceptor{id: 2, stateStore: acceptorStore2}, &acceptor{id: 3, stateStore: acceptorStore2}, &acceptor{id: 4, stateStore: acceptorStore2}}},
+			args:    args{key: []byte("Bob"), changeFunc: readFunc},
+			want:    []byte("Marley"),
 			wantErr: false,
 		},
-
-		{name: "enough acceptors setFunc. acceptor with own stores",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, stateStore: m, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
-			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("bob"), []byte("marley"))},
-			want:    []byte("marley"),
+		{name: "enough acceptors setFunc",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
+			args:    args{key: []byte("foo"), changeFunc: setFunc([]byte("stephen"), []byte("hawking"))},
+			want:    []byte("hawking"),
 			wantErr: false,
 		},
 	}
