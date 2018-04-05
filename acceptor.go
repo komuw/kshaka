@@ -110,7 +110,7 @@ func (a *acceptor) prepare(b ballot, key []byte) (acceptorState, error) {
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
-func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, error) {
+func (a *acceptor) accept(b ballot, key []byte, state []byte) (acceptorState, error) {
 	/*
 		Yes, acceptors should store tuple (promised ballot, accepted ballot and an accepted value) per key.
 		Proposers, unlike acceptors, may use the same ballot number sequence.
@@ -185,18 +185,18 @@ func (a *acceptor) accept(b ballot, key []byte, value []byte) (acceptorState, er
 	}
 	// TODO. NB: it is possible, from the following logic, for an acceptor to accept a ballot
 	// but not accept the new state/value. ie if the call to stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
-	// but stateStore.Set(key, value) fails.
+	// but stateStore.Set(key, state) fails.
 	// we should think about the ramifications of that for a second.
 	err = a.stateStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, acceptError(fmt.Sprintf("%v", err))
 	}
-	fmt.Printf("\n\n key: %#+v. value: %#+v", string(key), string(value))
-	err = a.stateStore.Set(key, value)
+	fmt.Printf("\n\n key: %#+v. state: %#+v", string(key), string(state))
+	err = a.stateStore.Set(key, state)
 	if err != nil {
 		return acceptorState{acceptedBallot: b, state: state}, acceptError(fmt.Sprintf("%v", err))
 	}
 
-	return acceptorState{acceptedBallot: b, state: value}, nil
+	return acceptorState{acceptedBallot: b, state: state}, nil
 
 }
