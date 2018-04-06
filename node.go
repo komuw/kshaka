@@ -83,7 +83,7 @@ type Node struct {
 	acceptorStore StableStore
 }
 
-func newNode(store StableStore) *Node {
+func NewNode(store StableStore) *Node {
 	p := &Node{acceptorStore: store}
 	p.nodes = []*Node{p}
 	return p

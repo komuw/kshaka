@@ -12,7 +12,7 @@ func TestNode_incBallot(t *testing.T) {
 		name string
 		n    *Node
 	}{
-		{name: "increment ballot", n: newNode(store)},
+		{name: "increment ballot", n: NewNode(store)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
