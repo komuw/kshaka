@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_proposer_Propose(t *testing.T) {
+func TestPropose(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
 	acceptorStore := &InmemStore{kv: kv}
 
@@ -20,6 +20,7 @@ func Test_proposer_Propose(t *testing.T) {
 		return func(current []byte) ([]byte, error) {
 			return val, nil
 		}
+
 	}
 
 	type args struct {
@@ -28,37 +29,52 @@ func Test_proposer_Propose(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		p       proposer
+		pa      ProposerAcceptor
 		args    args
 		want    []byte
 		wantErr bool
 	}{
 		{name: "no acceptors",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}},
+			pa:      &Node{ID: 1, ballot: ballot{}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
 		{name: "two acceptors",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}}},
+			pa:      &Node{ID: 1, ballot: ballot{}, nodes: []*Node{&Node{ID: 1, acceptorStore: acceptorStore}, &Node{ID: 2, acceptorStore: acceptorStore}}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
 		{name: "enough acceptors readFunc no key set",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
+			pa: &Node{ID: 1,
+				ballot: ballot{},
+				nodes: []*Node{&Node{ID: 1, acceptorStore: acceptorStore},
+					&Node{ID: 2, acceptorStore: acceptorStore},
+					&Node{ID: 3, acceptorStore: acceptorStore},
+					&Node{ID: 4, acceptorStore: acceptorStore}}},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: false,
 		},
 		{name: "enough acceptors readFunc with key set",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore2}, &acceptor{id: 2, stateStore: acceptorStore2}, &acceptor{id: 3, stateStore: acceptorStore2}, &acceptor{id: 4, stateStore: acceptorStore2}}},
+			pa: &Node{ID: 1,
+				ballot: ballot{},
+				nodes: []*Node{&Node{ID: 1, acceptorStore: acceptorStore2},
+					&Node{ID: 2, acceptorStore: acceptorStore2},
+					&Node{ID: 3, acceptorStore: acceptorStore2},
+					&Node{ID: 4, acceptorStore: acceptorStore2}}},
 			args:    args{key: []byte("Bob"), changeFunc: readFunc},
 			want:    []byte("Marley"),
 			wantErr: false,
 		},
 		{name: "enough acceptors setFunc",
-			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
+			pa: &Node{ID: 1,
+				ballot: ballot{},
+				nodes: []*Node{&Node{ID: 1, acceptorStore: acceptorStore},
+					&Node{ID: 2, acceptorStore: acceptorStore},
+					&Node{ID: 3, acceptorStore: acceptorStore},
+					&Node{ID: 4, acceptorStore: acceptorStore}}},
 			args:    args{key: []byte("stephen"), changeFunc: setFunc([]byte("hawking"))},
 			want:    []byte("hawking"),
 			wantErr: false,
@@ -67,8 +83,7 @@ func Test_proposer_Propose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &tt.p
-			newstate, err := p.Propose(tt.args.key, tt.args.changeFunc)
+			newstate, err := Propose(tt.pa, tt.args.key, tt.args.changeFunc)
 			t.Logf("\nnewstate:%#+v, \nerr:%#+v", newstate, err)
 
 			if (err != nil) != tt.wantErr {
