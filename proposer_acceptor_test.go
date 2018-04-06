@@ -9,18 +9,18 @@ func TestPropose(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
 	acceptorStore := &InmemStore{kv: kv}
 
-	// kv2 := map[string][]byte{"Bob": []byte("Marley")}
-	// acceptorStore2 := &InmemStore{kv: kv2}
+	kv2 := map[string][]byte{"Bob": []byte("Marley")}
+	acceptorStore2 := &InmemStore{kv: kv2}
 
 	var readFunc ChangeFunction = func(current []byte) ([]byte, error) {
 		return current, nil
 	}
 
-	// var setFunc = func(val []byte) ChangeFunction {
-	// 	return func(current []byte) ([]byte, error) {
-	// 		return val, nil
-	// 	}
-	// }
+	var setFunc = func(val []byte) ChangeFunction {
+		return func(current []byte) ([]byte, error) {
+			return val, nil
+		}
+	}
 
 	type args struct {
 		key        []byte
@@ -56,18 +56,28 @@ func TestPropose(t *testing.T) {
 			want:    nil,
 			wantErr: false,
 		},
-		// {name: "enough acceptors readFunc with key set",
-		// 	p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, acceptorStore: acceptorStore2}, &acceptor{id: 2, acceptorStore: acceptorStore2}, &acceptor{id: 3, acceptorStore: acceptorStore2}, &acceptor{id: 4, acceptorStore: acceptorStore2}}},
-		// 	args:    args{key: []byte("Bob"), changeFunc: readFunc},
-		// 	want:    []byte("Marley"),
-		// 	wantErr: false,
-		// },
-		// {name: "enough acceptors setFunc",
-		// 	p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, acceptorStore: acceptorStore}, &acceptor{id: 2, acceptorStore: acceptorStore}, &acceptor{id: 3, acceptorStore: acceptorStore}, &acceptor{id: 4, acceptorStore: acceptorStore}}},
-		// 	args:    args{key: []byte("stephen"), changeFunc: setFunc([]byte("hawking"))},
-		// 	want:    []byte("hawking"),
-		// 	wantErr: false,
-		// },
+		{name: "enough acceptors readFunc with key set",
+			p: proposerAcceptor{id: 1,
+				ballot: ballot{},
+				proposerAcceptors: []*proposerAcceptor{&proposerAcceptor{id: 1, acceptorStore: acceptorStore2},
+					&proposerAcceptor{id: 2, acceptorStore: acceptorStore2},
+					&proposerAcceptor{id: 3, acceptorStore: acceptorStore2},
+					&proposerAcceptor{id: 4, acceptorStore: acceptorStore2}}},
+			args:    args{key: []byte("Bob"), changeFunc: readFunc},
+			want:    []byte("Marley"),
+			wantErr: false,
+		},
+		{name: "enough acceptors setFunc",
+			p: proposerAcceptor{id: 1,
+				ballot: ballot{},
+				proposerAcceptors: []*proposerAcceptor{&proposerAcceptor{id: 1, acceptorStore: acceptorStore},
+					&proposerAcceptor{id: 2, acceptorStore: acceptorStore},
+					&proposerAcceptor{id: 3, acceptorStore: acceptorStore},
+					&proposerAcceptor{id: 4, acceptorStore: acceptorStore}}},
+			args:    args{key: []byte("stephen"), changeFunc: setFunc([]byte("hawking"))},
+			want:    []byte("hawking"),
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
