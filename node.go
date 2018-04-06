@@ -22,7 +22,8 @@ Example usage:
 		}
 	}
 
-	// create a proposer with a list of acceptors
+	// create a Node with a list of additional nodes.
+	// number of modes needed for quorom ought to be >= 3
 	node1 := NewNode(sStore)
 	node2 := NewNode(sStore)
 	node3 := NewNode(sStore)
