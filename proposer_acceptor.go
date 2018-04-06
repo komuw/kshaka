@@ -25,10 +25,10 @@ Example usage:
 	// create a proposer with a list of acceptors
 	p := &proposer{id: 1,
 		ballot:     ballot{Counter: 1, ProposerID: 1},
-		acceptors: []*acceptor{&acceptor{id: 1, stateStore: sStore},
-			&acceptor{id: 2, stateStore: sStore},
-			&acceptor{id: 3, stateStore: sStore},
-			&acceptor{id: 4, stateStore: sStore}}}
+		acceptors: []*acceptor{&acceptor{id: 1, acceptorStore: sStore},
+			&acceptor{id: 2, acceptorStore: sStore},
+			&acceptor{id: 3, acceptorStore: sStore},
+			&acceptor{id: 4, acceptorStore: sStore}}}
 
 	key := []byte("name")
 	val := []byte("Masta-Ace")
@@ -65,10 +65,28 @@ func (e acceptError) Error() string {
 	return string(e)
 }
 
-type acceptorState struct {
-	promisedBallot ballot
-	acceptedBallot ballot
-	state          []byte
+type ProposerAcceptor interface {
+	proposer
+	acceptor
+}
+
+// Propose is the method that clients call when they want to submit
+// the f change function to a proposer.
+// It takes the key whose value you want to apply the ChangeFunction to and
+// also the ChangeFunction that will be applied to the value(contents) of the key.
+func Propose(prop ProposerAcceptor, key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	// prepare phase
+	currentState, err := prop.sendPrepare(key)
+	if err != nil {
+		return nil, err
+	}
+
+	// accept phase
+	newState, err := prop.sendAccept(key, currentState, changeFunc)
+	if err != nil {
+		return nil, err
+	}
+	return newState, nil
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
@@ -87,12 +105,12 @@ type proposerAcceptor struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex             // protects state
-	stateStore StableStore //stores ballots and state
+	sync.Mutex                // protects state
+	acceptorStore StableStore //stores ballots and state
 }
 
-func newProposerAcceptor() *proposerAcceptor {
-	p := &proposerAcceptor{}
+func newProposerAcceptor(store StableStore) *proposerAcceptor {
+	p := &proposerAcceptor{acceptorStore: store}
 	p.proposerAcceptors = []*proposerAcceptor{p}
 	return p
 }
@@ -250,23 +268,6 @@ func (p *proposerAcceptor) sendAccept(key []byte, currentState []byte, changeFun
 	return newState, nil
 }
 
-// TODO: handle zero values of stuff. eg if we find that an acceptor has replied with a state of default []byte(ie <nil>)
-// then we probably shouldn't save that as the state or reply to client as the state.
-// or maybe we should??
-// mull on this.
-
-const minimumNoAcceptors = 3
-
-// acceptedBallotKey is the key that we use to store the value of the current accepted ballot.
-// it ought to be unique and clients/users will be prohibited from using this value as a key for their data.
-func acceptedBallotKey(key []byte) []byte {
-	return []byte(fmt.Sprintf("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e.%s", key))
-}
-
-func promisedBallotKey(key []byte) []byte {
-	return []byte(fmt.Sprintf("__PROMISED__BALLOT__KEY__c8c07b0c-3598-11e8-98b8-97a4ad1feb35__d1a0ca9c-3598-11e8-9c5f-c3c66e6b4439.%s", key))
-}
-
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
@@ -274,12 +275,12 @@ func (a *proposerAcceptor) prepare(b ballot, key []byte) (acceptorState, error) 
 	a.Lock()
 	defer a.Unlock()
 
-	state, err := a.stateStore.Get(key)
+	state, err := a.acceptorStore.Get(key)
 	if err != nil {
 		return acceptorState{}, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
 
-	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey(key))
+	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
 	if err != nil {
 		// TODO: propagate the underlying error
 		return acceptorState{state: state}, prepareError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
@@ -299,7 +300,7 @@ func (a *proposerAcceptor) prepare(b ballot, key []byte) (acceptorState, error) 
 		}
 	}
 
-	promisedBallotBytes, err := a.stateStore.Get(promisedBallotKey(key))
+	promisedBallotBytes, err := a.acceptorStore.Get(promisedBallotKey(key))
 	if err != nil {
 		// TODO: propagate the underlying error
 		return acceptorState{state: state, acceptedBallot: acceptedBallot}, prepareError(fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.id))
@@ -327,7 +328,7 @@ func (a *proposerAcceptor) prepare(b ballot, key []byte) (acceptorState, error) 
 		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, prepareError(fmt.Sprintf("%v", err))
 	}
 
-	err = a.stateStore.Set(promisedBallotKey(key), ballotBuffer.Bytes())
+	err = a.acceptorStore.Set(promisedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, prepareError(fmt.Sprintf("%v", err))
 	}
@@ -349,12 +350,12 @@ func (a *proposerAcceptor) accept(b ballot, key []byte, state []byte) (acceptorS
 	a.Lock()
 	defer a.Unlock()
 
-	state, err := a.stateStore.Get(key)
+	state, err := a.acceptorStore.Get(key)
 	if err != nil {
 		return acceptorState{}, acceptError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.id))
 	}
 
-	acceptedBallotBytes, err := a.stateStore.Get(acceptedBallotKey(key))
+	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
 	if err != nil {
 		return acceptorState{state: state}, acceptError(fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.id))
 	}
@@ -377,7 +378,7 @@ func (a *proposerAcceptor) accept(b ballot, key []byte, state []byte) (acceptorS
 		}
 	}
 
-	promisedBallotBytes, err := a.stateStore.Get(promisedBallotKey(key))
+	promisedBallotBytes, err := a.acceptorStore.Get(promisedBallotKey(key))
 	if err != nil {
 		// TODO: propagate the underlying error
 		return acceptorState{state: state, acceptedBallot: acceptedBallot}, acceptError(fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.id))
@@ -398,7 +399,7 @@ func (a *proposerAcceptor) accept(b ballot, key []byte, state []byte) (acceptorS
 	}
 
 	// erase promised ballot
-	err = a.stateStore.Set(promisedBallotKey(key), nil)
+	err = a.acceptorStore.Set(promisedBallotKey(key), nil)
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, acceptError(fmt.Sprintf("%v", err))
 	}
@@ -410,15 +411,15 @@ func (a *proposerAcceptor) accept(b ballot, key []byte, state []byte) (acceptorS
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, acceptError(fmt.Sprintf("%v", err))
 	}
 	// TODO. NB: it is possible, from the following logic, for an acceptor to accept a ballot
-	// but not accept the new state/value. ie if the call to stateStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
-	// but stateStore.Set(key, state) fails.
+	// but not accept the new state/value. ie if the call to acceptorStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
+	// but acceptorStore.Set(key, state) fails.
 	// we should think about the ramifications of that for a second.
-	err = a.stateStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
+	err = a.acceptorStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, acceptError(fmt.Sprintf("%v", err))
 	}
 	fmt.Printf("\n\n key: %#+v. state: %#+v", string(key), string(state))
-	err = a.stateStore.Set(key, state)
+	err = a.acceptorStore.Set(key, state)
 	if err != nil {
 		return acceptorState{acceptedBallot: b, state: state}, acceptError(fmt.Sprintf("%v", err))
 	}
