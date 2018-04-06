@@ -65,8 +65,8 @@ func (e acceptError) Error() string {
 	return string(e)
 }
 
-// Node satisfies the ProposerAcceptor interface
-// A Node is both a proposer and an acceptor.
+// Node satisfies the ProposerAcceptor interface.
+// A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
 type Node struct {
 	ID     uint64
 	ballot ballot
