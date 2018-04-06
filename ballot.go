@@ -8,8 +8,3 @@ type ballot struct {
 	Counter            uint64
 	ProposerAcceptorID uint64
 }
-
-// monotonically increase the ballot
-func (p *proposerAcceptor) incBallot() {
-	p.ballot.Counter++
-}

@@ -27,6 +27,11 @@ type acceptorState struct {
 	acceptedBallot ballot
 	state          []byte
 }
+
+// Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
+// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
+// How to achieve this is an implementation detail.
+// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 type acceptor interface {
 	prepare(b ballot, key []byte) (acceptorState, error)
 	accept(b ballot, key []byte, state []byte) (acceptorState, error)
