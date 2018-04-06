@@ -23,7 +23,7 @@ Example usage:
 	}
 
 	// create a Node with a list of additional nodes.
-	// number of modes needed for quorom ought to be >= 3
+	// number of nodes needed for quorom ought to be >= 3
 	node1 := NewNode(sStore)
 	node2 := NewNode(sStore)
 	node3 := NewNode(sStore)
