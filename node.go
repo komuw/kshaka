@@ -35,7 +35,7 @@ Example usage:
 	val := []byte("Masta-Ace")
 
 	// make a proposition;
-	// consensus via CASPaxos will happen and you will have your result back.
+	// consensus via CASPaxos will happen and you will get the new state and any error back.
 	newstate, err := Propose(n, key, setFunc(key, val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
