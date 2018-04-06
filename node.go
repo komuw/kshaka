@@ -75,7 +75,8 @@ type Node struct {
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
 	// eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
-	sync.Mutex // protects state
+	// the mux protects the state(acceptorStore)
+	sync.Mutex
 
 	// acceptorStore is a StableStore implementation for durable state
 	// It provides stable storage for many fields in raftState
