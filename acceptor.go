@@ -16,6 +16,8 @@ func acceptedBallotKey(key []byte) []byte {
 	return []byte(fmt.Sprintf("__ACCEPTED__BALLOT__KEY__207d1a68-34f3-11e8-88e5-cb7b2fa68526__3a39a980-34f3-11e8-853c-f35df5f3154e.%s", key))
 }
 
+// promisedBallotKey is the key that we use to store the value of the current promised ballot.
+// it ought to be unique and clients/users will be prohibited from using this value as a key for their data.
 func promisedBallotKey(key []byte) []byte {
 	return []byte(fmt.Sprintf("__PROMISED__BALLOT__KEY__c8c07b0c-3598-11e8-98b8-97a4ad1feb35__d1a0ca9c-3598-11e8-9c5f-c3c66e6b4439.%s", key))
 }
