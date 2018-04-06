@@ -83,10 +83,13 @@ type Node struct {
 	acceptorStore StableStore
 }
 
-func NewNode(store StableStore) *Node {
-	p := &Node{acceptorStore: store}
-	p.nodes = []*Node{p}
-	return p
+// NewNode creates a new node. It also adds the created node to Node.nodes
+// additionally if any nodes are supplied, they are also added to Node.nodes
+func NewNode(store StableStore, nodes ...*Node) *Node {
+	n := &Node{acceptorStore: store}
+	n.nodes = []*Node{n}
+	n.nodes = append(n.nodes, nodes...)
+	return n
 }
 
 func (n *Node) addNode(pa *Node) error {
