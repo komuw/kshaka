@@ -9,39 +9,58 @@ and doesn't cause transient unavailability when any [N−1] of N nodes crash." -
 
 Example usage:
 
-	// create a store that will be used. Ideally it should be a disk persisted store.
-	// any store that implements hashicorp/raft StableStore interface will suffice
-	kv := map[string][]byte{"foo": []byte("bar")}
-	sStore := &InmemStore{kv: kv}
+	package main
 
-	// The function that will be applied by CASPaxos. This will be applied to the
-	// current value stored under the key passed into the Propose method of the proposer.
-	var setFunc = func(val []byte) ChangeFunction {
-		return func(current []byte) ([]byte, error) {
-			return val, nil
+	import (
+		"fmt"
+
+		"github.com/hashicorp/raft-boltdb"
+		"github.com/komuw/kshaka"
+	)
+
+	func main() {
+
+		fmt.Println("1")
+		// create a store that will be used. Ideally it should be a disk persisted store.
+		// any store that implements hashicorp/raft StableStore interface will suffice
+		boltStore, err := raftboltdb.NewBoltStore("/tmp/bolt.db")
+		if err != nil {
+			panic(err)
 		}
+		fmt.Println("2")
+
+		// The function that will be applied by CASPaxos. This will be applied to the
+		// current value stored under the key passed into the Propose method of the proposer.
+		var setFunc = func(val []byte) kshaka.ChangeFunction {
+			return func(current []byte) ([]byte, error) {
+				return val, nil
+			}
+		}
+		fmt.Println("3")
+
+		// create a Node with a list of additional nodes.
+		// number of nodes needed for quorom ought to be >= 3
+		node1 := kshaka.NewNode(boltStore)
+		node2 := kshaka.NewNode(boltStore)
+		node3 := kshaka.NewNode(boltStore)
+		node4 := kshaka.NewNode(boltStore)
+
+		fmt.Println("4")
+		n := kshaka.NewNode(boltStore, node1, node2, node3, node4)
+
+		key := []byte("name")
+		val := []byte("Masta-Ace")
+
+		fmt.Println("5")
+		// make a proposition;
+		// consensus via CASPaxos will happen and you will get the new state and any error back.
+		newstate, err := kshaka.Propose(n, key, setFunc(val))
+		if err != nil {
+			fmt.Printf("err: %v", err)
+		}
+		fmt.Printf("newstate: %v", newstate)
+		fmt.Println("6")
 	}
-
-	// create a Node with a list of additional nodes.
-	// number of nodes needed for quorom ought to be >= 3
-	node1 := NewNode(sStore)
-	node2 := NewNode(sStore)
-	node3 := NewNode(sStore)
-	node4 := NewNode(sStore)
-
-	n := NewNode(sStore, node1, node2, node3, node4)
-
-	key := []byte("name")
-	val := []byte("Masta-Ace")
-
-	// make a proposition;
-	// consensus via CASPaxos will happen and you will get the new state and any error back.
-	newstate, err := Propose(n, key, setFunc(key, val))
-	if err != nil {
-		fmt.Printf("err: %v", err)
-	}
-	fmt.Printf("newstate: %v", newstate)
-
 
 TODO: add system design here.
 */
