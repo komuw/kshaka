@@ -93,8 +93,8 @@ func NewNode(store StableStore, nodes ...*Node) *Node {
 	return n
 }
 
-func (n *Node) addNode(pa *Node) error {
-	n.nodes = append(n.nodes, pa)
+func (n *Node) addNode(node *Node) error {
+	n.nodes = append(n.nodes, node)
 	return nil
 }
 
