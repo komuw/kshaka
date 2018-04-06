@@ -5,11 +5,11 @@ package kshaka
 // To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
 // TODO: make ballot a simple structure, like uint64, so that we dont have to use encoding/gob when saving it.
 type ballot struct {
-	Counter    uint64
-	ProposerID uint64
+	Counter            uint64
+	ProposerAcceptorID uint64
 }
 
 // monotonically increase the ballot
-func (p *proposer) incBallot() {
+func (p *proposerAcceptor) incBallot() {
 	p.ballot.Counter++
 }

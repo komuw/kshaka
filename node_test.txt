@@ -1,0 +1,88 @@
+// package kshaka
+
+// import "testing"
+
+// func TestNode_ala(t *testing.T) {
+
+// 	type fields struct {
+// 		id       uint64
+// 		proposer proposer
+// 		acceptor acceptor
+// 	}
+// 	tests := []struct {
+// 		name   string
+// 		fields fields
+// 	}{
+// 		{name: "hi",
+// 			fields: fields{id: 1, proposer: proposer{id: 1}, acceptor: acceptor{id: 1}}},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			n := &Node{
+// 				id:       tt.fields.id,
+// 				proposer: tt.fields.proposer,
+// 				acceptor: tt.fields.acceptor,
+// 			}
+// 			n.ala()
+// 			n.Propose(key []byte, changeFunc ChangeFunction)
+// 		})
+// 	}
+// }
+
+/////
+package kshaka
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestNode_cool(t *testing.T) {
+	kv := map[string][]byte{"": []byte("")}
+	acceptorStore := &InmemStore{kv: kv}
+
+	var readFunc ChangeFunction = func(current []byte) ([]byte, error) {
+		return current, nil
+	}
+
+	type args struct {
+		key        []byte
+		changeFunc ChangeFunction
+	}
+	tests := []struct {
+		name    string
+		p       proposer
+		args    args
+		want    []byte
+		wantErr bool
+	}{
+		{name: "enough acceptors readFunc no key set",
+			p:       proposer{id: 1, ballot: ballot{Counter: 1, ProposerID: 1}, acceptors: []*acceptor{&acceptor{id: 1, stateStore: acceptorStore}, &acceptor{id: 2, stateStore: acceptorStore}, &acceptor{id: 3, stateStore: acceptorStore}, &acceptor{id: 4, stateStore: acceptorStore}}},
+			args:    args{key: []byte("foo"), changeFunc: readFunc},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			//p := &tt.p
+
+			n := &Node{id: 123,
+				proposer: tt.p,
+				acceptor: acceptor{}}
+
+			newstate, err := Propose(n, tt.args.key, tt.args.changeFunc)
+
+			t.Logf("\nnewstate:%#+v, \nerr:%#+v", newstate, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("\nproposer.Propose() \nerror = %v, \nwantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(newstate, tt.want) {
+				t.Errorf("\nproposer.Propose() \ngot= %v, \nwant = %v", newstate, tt.want)
+			}
+		})
+	}
+}
