@@ -8,13 +8,13 @@ func Test_proposer_incBallot(t *testing.T) {
 
 	tests := []struct {
 		name string
-		p    proposer
+		p    *proposerAcceptor
 	}{
-		{name: "increment ballot", p: proposer{id: 1}},
+		{name: "increment ballot", p: newProposerAcceptor()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &tt.p
+			p := tt.p
 			p.incBallot()
 			p.incBallot()
 			p.incBallot()

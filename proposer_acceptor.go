@@ -92,10 +92,9 @@ type proposerAcceptor struct {
 }
 
 func newProposerAcceptor() *proposerAcceptor {
-	var proposerAcceptorID uint64 = 1
-	b := ballot{Counter: 1, ProposerAcceptorID: proposerAcceptorID}
-	p := proposerAcceptor{id: proposerAcceptorID, ballot: b}
-	return &p
+	p := &proposerAcceptor{}
+	p.proposerAcceptors = []*proposerAcceptor{p}
+	return p
 }
 
 func (p *proposerAcceptor) addproposerAcceptor(pa *proposerAcceptor) error {
