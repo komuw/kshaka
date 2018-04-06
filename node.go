@@ -23,19 +23,19 @@ Example usage:
 	}
 
 	// create a proposer with a list of acceptors
-	p := &proposer{id: 1,
-		ballot:     ballot{Counter: 1, ProposerID: 1},
-		acceptors: []*acceptor{&acceptor{id: 1, acceptorStore: sStore},
-			&acceptor{id: 2, acceptorStore: sStore},
-			&acceptor{id: 3, acceptorStore: sStore},
-			&acceptor{id: 4, acceptorStore: sStore}}}
+	node1 := NewNode(sStore)
+	node2 := NewNode(sStore)
+	node3 := NewNode(sStore)
+	node4 := NewNode(sStore)
+
+	n := NewNode(sStore, node1, node2, node3, node4)
 
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
 	// make a proposition;
 	// consensus via CASPaxos will happen and you will have your result back.
-	newstate, err := p.Propose(key, setFunc(key, val))
+	newstate, err := Propose(n, key, setFunc(key, val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
