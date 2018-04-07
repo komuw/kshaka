@@ -279,6 +279,7 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 
 	state, err := a.acceptorStore.Get(key)
 	if err != nil {
+		// TODO: propagate errors!!
 		return acceptorState{}, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
 
