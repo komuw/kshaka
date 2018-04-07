@@ -24,7 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
+# ignored because they are only used in example files.
+ignored = ["github.com/hashicorp/raft-boltdb"]
 
 [prune]
+  non-go = true
   go-tests = true
   unused-packages = true
