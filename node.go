@@ -156,6 +156,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
+			fmt.Printf("\n\n NODE: %#+v", a)
 			acceptedState, err := a.prepare(p.ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
@@ -280,8 +281,10 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 	state, err := a.acceptorStore.Get(key)
 	if err != nil {
 		// TODO: propagate errors!!
+		fmt.Printf("\n\n unable to get state for key:%v from acceptor:%v, err:%v \n\n", key, a.ID, err)
 		return acceptorState{}, prepareError(fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
+	fmt.Printf("\n\n found state:%v \n\n", state)
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
 	if err != nil {
