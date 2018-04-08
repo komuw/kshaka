@@ -32,6 +32,7 @@ func (i *InmemStore) Get(key []byte) ([]byte, error) {
 	val := i.kv[string(key)]
 
 	// see: https://github.com/hashicorp/raft-boltdb/blob/6e5ba93211eaf8d9a2ad7e41ffad8c6f160f9fe3/bolt_store.go#L241-L246
+	// opened; hashicorp/raft/pull/286
 	if val == nil {
 		return nil, errors.New("not found")
 	}
