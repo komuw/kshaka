@@ -1,6 +1,7 @@
 package kshaka
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -28,7 +29,13 @@ func (i *InmemStore) Set(key []byte, val []byte) error {
 func (i *InmemStore) Get(key []byte) ([]byte, error) {
 	i.l.RLock()
 	defer i.l.RUnlock()
-	return i.kv[string(key)], nil
+	val := i.kv[string(key)]
+
+	// see: https://github.com/hashicorp/raft-boltdb/blob/6e5ba93211eaf8d9a2ad7e41ffad8c6f160f9fe3/bolt_store.go#L241-L246
+	if val == nil {
+		return nil, errors.New("not found")
+	}
+	return val, nil
 }
 
 // SetUint64 implements the StableStore interface.
