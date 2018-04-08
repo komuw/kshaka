@@ -105,8 +105,8 @@ type Node struct {
 
 // NewNode creates a new node. It also adds the created node to Node.nodes
 // additionally if any nodes are supplied, they are also added to Node.nodes
-func NewNode(store StableStore, nodes ...*Node) *Node {
-	n := &Node{acceptorStore: store}
+func NewNode(ID uint64, store StableStore, nodes ...*Node) *Node {
+	n := &Node{ID: ID, acceptorStore: store}
 	n.nodes = []*Node{n}
 	n.nodes = append(n.nodes, nodes...)
 	return n
@@ -127,9 +127,6 @@ func (n *Node) incBallot() {
 // If all replies from acceptors contain the empty value, then the proposer defines the current state as ∅
 // otherwise it picks the value of the tuple with the highest ballot number.
 func (p *Node) sendPrepare(key []byte) ([]byte, error) {
-	p.Lock()
-	defer p.Unlock()
-
 	var (
 		noAcceptors         = len(p.nodes)
 		F                   = (noAcceptors - 1) / 2 // number of failures we can tolerate
@@ -186,7 +183,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 	// we didn't get F+1 confirmations
 	if numberConfirmations < confirmationsNeeded {
 		p.ballot.Counter = highballotConflict.Counter + 1
-		return nil, prepareError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
+		return nil, prepareError(fmt.Sprintf("confirmations:%v is less than required minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
 	return currentState, nil
@@ -204,11 +201,6 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		If we split a sequence of unique and increasing ballot numbers into several subsequences then any of them remains unique and increasing, so it's fine.
 		- Rystsov
 	*/
-
-	// TODO: this locks are supposed to be per key
-	// not method wide
-	p.Lock()
-	defer p.Unlock()
 	var (
 		noAcceptors         = len(p.nodes)
 		F                   = (noAcceptors - 1) / 2 // number of failures we can tolerate
@@ -265,7 +257,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	// we didn't get F+1 confirmations
 	if numberConfirmations < confirmationsNeeded {
 		p.ballot.Counter = highballotConflict.Counter + 1
-		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than requires minimum of:%v", numberConfirmations, confirmationsNeeded))
+		return nil, acceptError(fmt.Sprintf("confirmations:%v is less than required minimum of:%v", numberConfirmations, confirmationsNeeded))
 	}
 
 	return newState, nil
@@ -275,6 +267,8 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
 func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
+	// TODO: this locks are supposed to be per key
+	// not method wide
 	a.Lock()
 	defer a.Unlock()
 

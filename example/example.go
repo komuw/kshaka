@@ -29,11 +29,11 @@ func main() {
 
 	// create a Node with a list of additional nodes.
 	// number of nodes needed for quorom ought to be >= 3
-	node1 := kshaka.NewNode(boltStore)
-	node2 := kshaka.NewNode(boltStore)
+	node1 := kshaka.NewNode(1, boltStore)
+	node2 := kshaka.NewNode(2, boltStore)
 
 	fmt.Println("4")
-	n := kshaka.NewNode(boltStore, node1, node2)
+	n := kshaka.NewNode(3, boltStore, node1, node2)
 
 	key := []byte("name")
 	val := []byte("Masta-Ace")
