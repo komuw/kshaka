@@ -28,37 +28,31 @@ func TestNode_incBallot(t *testing.T) {
 	}
 }
 
-func TestNewNode(t *testing.T) {
+func TestMingleNodes(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
 	store := &InmemStore{kv: kv}
-
-	type args struct {
-		store StableStore
-		nodes []*Node
-	}
 	tests := []struct {
 		name        string
-		args        args
+		nodes       []*Node
 		numberNodes int
 	}{
-		{name: "no nodes supplied",
-			args:        args{store: store},
+		{name: "1 node should include itself in n.nodes",
+			nodes:       []*Node{NewNode(1, store)},
 			numberNodes: 1},
-		{name: "1 node supplied",
-			args:        args{store: store, nodes: []*Node{NewNode(1, store)}},
+		{name: "2 nodes supplied",
+			nodes:       []*Node{NewNode(1, store), NewNode(2, store)},
 			numberNodes: 2},
-
-		{name: "7 node supplied",
-			args:        args{store: store, nodes: []*Node{NewNode(1, store), NewNode(2, store), NewNode(3, store), NewNode(4, store), NewNode(5, store), NewNode(6, store), NewNode(7, store)}},
-			numberNodes: 8},
+		{name: "5 nodes supplied",
+			nodes:       []*Node{NewNode(1, store), NewNode(2, store), NewNode(3, store), NewNode(4, store), NewNode(5, store)},
+			numberNodes: 5},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := NewNode(8, tt.args.store, tt.args.nodes...)
+			MingleNodes(tt.nodes...)
+			n := tt.nodes[0]
 			numNodes := len(n.nodes)
-
 			if numNodes != tt.numberNodes {
-				t.Errorf("\n NewNode \nnumNodes= %#+v, \nwanted = %#+v", numNodes, tt.numberNodes)
+				t.Errorf("\n MingleNodes \nnumNodes= %#+v, \nwanted = %#+v", numNodes, tt.numberNodes)
 			}
 
 		})

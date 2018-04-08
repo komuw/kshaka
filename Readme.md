@@ -51,19 +51,23 @@ func main() {
 	// in different machines each with its own store.
 	node1 := kshaka.NewNode(1, boltStore)
 	node2 := kshaka.NewNode(2, boltStore)
-	node3 := kshaka.NewNode(3, boltStore, node1, node2)
+	node3 := kshaka.NewNode(3, boltStore)
+
+	kshaka.MingleNodes(node1, node2, node3)
 
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
 	// make a proposition; consensus via CASPaxos will
 	// happen and you will get the new state and any error back.
+	// NB: you can use any of the nodes as arg to Propose func
 	newstate, err := kshaka.Propose(node3, key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
 	fmt.Printf("newstate: %v", newstate)
 }
+
 ```               
 
 
