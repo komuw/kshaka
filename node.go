@@ -91,9 +91,10 @@ func (e acceptError) Error() string {
 // Node satisfies the ProposerAcceptor interface.
 // A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
 type Node struct {
-	ID     uint64
-	ballot ballot
-	nodes  []*Node
+	ID       uint64
+	Metadata map[string]string
+	ballot   ballot
+	nodes    []*Node
 
 	// In general the "prepare" and "accept" operations affecting the same key should be mutually exclusive.
 	// How to achieve this is an implementation detail.
@@ -119,9 +120,9 @@ func MingleNodes(nodes ...*Node) {
 	}
 }
 
-func (n *Node) addNode(node *Node) error {
-	n.nodes = append(n.nodes, node)
-	return nil
+// AddMetadata adds metadata to a node. eg name=myNode, env=production
+func (n *Node) AddMetadata(metadata map[string]string) {
+	n.Metadata = metadata
 }
 
 // monotonically increase the ballot
