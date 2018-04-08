@@ -12,7 +12,7 @@ func TestNode_incBallot(t *testing.T) {
 		name string
 		n    *Node
 	}{
-		{name: "increment ballot", n: NewNode(store)},
+		{name: "increment ballot", n: NewNode(1, store)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -45,16 +45,16 @@ func TestNewNode(t *testing.T) {
 			args:        args{store: store},
 			numberNodes: 1},
 		{name: "1 node supplied",
-			args:        args{store: store, nodes: []*Node{NewNode(store)}},
+			args:        args{store: store, nodes: []*Node{NewNode(1, store)}},
 			numberNodes: 2},
 
 		{name: "7 node supplied",
-			args:        args{store: store, nodes: []*Node{NewNode(store), NewNode(store), NewNode(store), NewNode(store), NewNode(store), NewNode(store), NewNode(store)}},
+			args:        args{store: store, nodes: []*Node{NewNode(1, store), NewNode(2, store), NewNode(3, store), NewNode(4, store), NewNode(5, store), NewNode(6, store), NewNode(7, store)}},
 			numberNodes: 8},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := NewNode(tt.args.store, tt.args.nodes...)
+			n := NewNode(8, tt.args.store, tt.args.nodes...)
 			numNodes := len(n.nodes)
 
 			if numNodes != tt.numberNodes {
