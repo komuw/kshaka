@@ -155,7 +155,6 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
-			fmt.Printf("\n\n NODE: %#+v", a)
 			acceptedState, err := a.prepare(p.ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
@@ -276,10 +275,8 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 
 	state, err := a.acceptorStore.Get(key)
 	if err != nil {
-		fmt.Printf("\n\n unable to get state for key:%v from acceptor:%v, err:%v \n\n", key, a.ID, err)
 		return acceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
-	fmt.Printf("\n\n found state:%v \n\n", state)
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
 	if err != nil {
@@ -359,8 +356,6 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 	}
 
-	fmt.Printf("\n\n acceptedBallotBytes: %#+v", acceptedBallotBytes)
-
 	var acceptedBallot ballot
 	if !bytes.Equal(acceptedBallotBytes, nil) {
 		// ie we found an accepted ballot
@@ -368,7 +363,6 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		dec := gob.NewDecoder(acceptedBallotReader)
 		err = dec.Decode(&acceptedBallot)
 		if err != nil {
-			fmt.Printf("\n\n err: %#+v", err)
 			return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 		}
 		// TODO: also take into account the Node ID to resolve tie-breaks
@@ -416,7 +410,7 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 	if err != nil {
 		return acceptorState{acceptedBallot: acceptedBallot, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush ballot:%v to disk", b))
 	}
-	fmt.Printf("\n\n key: %#+v. state: %#+v", string(key), string(state))
+
 	err = a.acceptorStore.Set(key, state)
 	if err != nil {
 		return acceptorState{acceptedBallot: b, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush the new state:%v to disk", state))
