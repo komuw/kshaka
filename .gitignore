@@ -8,3 +8,6 @@ kshaka.test
 
 # goreleaser distribution folder.
 /dist/
+
+# do not vendor, use package managers to get dependencies
+vendor/
