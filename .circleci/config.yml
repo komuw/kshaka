@@ -39,7 +39,7 @@ jobs:
                 go get -u github.com/hashicorp/raft-boltdb && \
                 go get -u github.com/golang/dep/cmd/dep && \
                 go get -u github.com/goreleaser/goreleaser && \
-                dep ensure
+                dep ensure -v
 
         # - run: source /etc/profile && go build --race -o kshaka main.go
 

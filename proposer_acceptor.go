@@ -1,5 +1,7 @@
 package kshaka
 
+import "fmt"
+
 // ProposerAcceptor is an entity that is both a proposer and an acceptor.
 type ProposerAcceptor interface {
 	proposer
@@ -14,12 +16,14 @@ func Propose(prop ProposerAcceptor, key []byte, changeFunc ChangeFunction) ([]by
 	// prepare phase
 	currentState, err := prop.sendPrepare(key)
 	if err != nil {
+		fmt.Printf("error: %+v\n", err)
 		return nil, err
 	}
 
 	// accept phase
 	newState, err := prop.sendAccept(key, currentState, changeFunc)
 	if err != nil {
+		fmt.Printf("error: %+v\n", err)
 		return nil, err
 	}
 	return newState, nil
