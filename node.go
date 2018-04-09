@@ -116,7 +116,11 @@ func NewNode(ID uint64, store StableStore, nodes ...*Node) *Node {
 // MingleNodes lets each node know about the other, including itself.
 func MingleNodes(nodes ...*Node) {
 	for _, n := range nodes {
-		n.nodes = append(n.nodes, nodes...)
+		// guard against adding same node twice
+		// TODO: fix this since it breaks down if len(nodes) > n.nodes even when some of those nodes already exist in n.nodes
+		if len(n.nodes) < len(nodes) {
+			n.nodes = append(n.nodes, nodes...)
+		}
 	}
 }
 
