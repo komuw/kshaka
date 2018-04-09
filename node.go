@@ -73,6 +73,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -164,6 +165,9 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 		res := <-prepareResultChan
 		if res.err != nil {
 			// conflict occured
+			// TODO: make the io.writer configurable
+			fmt.Fprintf(os.Stdout, "error:%+v", res.err)
+
 			numberConflicts++
 			if res.acceptedState.acceptedBallot.Counter > highballotConflict.Counter {
 				highballotConflict = res.acceptedState.acceptedBallot
@@ -242,6 +246,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		res := <-acceptResultChan
 		if res.err != nil {
 			// conflict occured
+			fmt.Fprintf(os.Stdout, "error:%+v", res.err)
 			numberConflicts++
 			if res.acceptedState.acceptedBallot.Counter > p.ballot.Counter {
 				highballotConflict = res.acceptedState.acceptedBallot
