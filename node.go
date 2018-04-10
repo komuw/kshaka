@@ -279,11 +279,21 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 	defer a.Unlock()
 
 	state, err := a.acceptorStore.Get(key)
+	if err != nil && err.Error() == "not found" {
+		// see: issues/10
+		// TODO: do better
+		state, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
+	if err != nil && err.Error() == "not found" {
+		// unfortunate way of handling errors
+		// TODO: do better
+		acceptedBallotBytes, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 	}
@@ -303,6 +313,11 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 	}
 
 	promisedBallotBytes, err := a.acceptorStore.Get(promisedBallotKey(key))
+	if err != nil && err.Error() == "not found" {
+		// unfortunate way of handling errors
+		// TODO: do better
+		promisedBallotBytes, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 	}
@@ -352,11 +367,21 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 	defer a.Unlock()
 
 	state, err := a.acceptorStore.Get(key)
+	if err != nil && err.Error() == "not found" {
+		// unfortunate way of handling errors
+		// TODO: do better
+		state, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
+	if err != nil && err.Error() == "not found" {
+		// unfortunate way of handling errors
+		// TODO: do better
+		acceptedBallotBytes, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 	}
@@ -377,6 +402,11 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 	}
 
 	promisedBallotBytes, err := a.acceptorStore.Get(promisedBallotKey(key))
+	if err != nil && err.Error() == "not found" {
+		// unfortunate way of handling errors
+		// TODO: do better
+		promisedBallotBytes, err = nil, nil
+	}
 	if err != nil {
 		return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 	}
