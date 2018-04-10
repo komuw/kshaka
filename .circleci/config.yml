@@ -55,6 +55,10 @@ jobs:
             name: run benchmarks
             command: source /etc/profile && go test -timeout 1m -race -run=XXXX -bench=. ./...
 
+        - run:
+            name: codecov
+            command: go test -timeout 30s -v -race -cover -coverprofile=coverage.txt ./... && bash <(curl -s https://codecov.io/bash)
+
 
 #   deploy:
 #     docker:

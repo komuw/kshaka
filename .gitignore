@@ -2,6 +2,7 @@
 debug
 debug.test
 kshaka.test
+coverage.txt
 
 # go-pry debug stuff
 .main.gopry
