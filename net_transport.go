@@ -1,8 +1,11 @@
 package kshaka
 
 import (
-	"net"
+	"fmt"
+	"net/rpc"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 /*
@@ -21,56 +24,25 @@ both are encoded using MsgPack.
 type NetworkTransport struct {
 	sync.RWMutex
 	nodeID      uint64
-	nodeAddress net.IP
+	nodeAddress string
+	nodeport    string
 }
 
 // NewNetworkTransport is used to initialize a new transport
-func NewNetworkTransport(nodeID uint64, nodeAddress net.IP) *NetworkTransport {
-	return &NetworkTransport{nodeID: nodeID, nodeAddress: nodeAddress}
+func NewNetworkTransport(nodeID uint64, nodeAddress string) *NetworkTransport {
+	return &NetworkTransport{nodeID: nodeID, nodeAddress: nodeAddress, nodeport: "15000"}
 }
-
-
-SendRPC(nodeID uint64, nodeAddress net.IP, rpcMethod string, req RPCrequest, resp *RPCresponse) error
 
 // SendRPC sends the appropriate RPC to the target node.
-func (n *NetworkTransport) SendRPC(nodeID uint64, nodeAddress net.IP, rpcMethod string, req RPCrequest, resp *RPCresponse) error {
-	// Get a conn
-	conn, err := n.getConnFromAddressProvider(id, target)
+func (n *NetworkTransport) SendRPC(rpcMethod string, req RPCrequest, resp *RPCresponse) error {
+	// TODO: add security??
+	client, err := rpc.DialHTTP("tcp", n.nodeAddress+n.nodeport)
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("unable to dial node ID:%v, address:%v", n.nodeID, n.nodeAddress))
 	}
-
-	// Set a deadline
-	if n.timeout > 0 {
-		conn.conn.SetDeadline(time.Now().Add(n.timeout))
+	err = client.Call(rpcMethod, req, resp)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("unable to call rpcMethod:%v of node ID:%v, address:%v", rpcMethod, n.nodeID, n.nodeAddress))
 	}
-
-	// Send the RPC
-	if err = sendRPC(conn, rpcType, args); err != nil {
-		return err
-	}
-
-	// Decode the response
-	canReturn, err := decodeResponse(conn, resp)
-	if canReturn {
-		n.returnConn(conn)
-	}
-	return err
+	return nil
 }
-
-
-// DOC:: https://golang.org/pkg/net/rpc
-client, err := rpc.DialHTTP("tcp", serverAddress + ":1234")
-if err != nil {
-	log.Fatal("dialing:", err)
-}
-
-//Then it can make a remote call:
-// Synchronous call
-args := &server.Args{7,8}
-var reply int
-err = client.Call("Arith.Multiply", args, &reply)
-if err != nil {
-	log.Fatal("arith error:", err)
-}
-fmt.Printf("Arith: %d*%d=%d", args.A, args.B, reply)
