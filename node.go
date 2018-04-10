@@ -280,8 +280,7 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 
 	state, err := a.acceptorStore.Get(key)
 	if err != nil && err.Error() == "not found" {
-		// unfortunate way of handling errors. this because most implementations of raft/StableStore return an error
-		// if value is a nil byte:: https://github.com/hashicorp/raft-boltdb/blob/6e5ba93211eaf8d9a2ad7e41ffad8c6f160f9fe3/bolt_store.go#L243-L245
+		// see: issues/10
 		// TODO: do better
 		state, err = nil, nil
 	}
