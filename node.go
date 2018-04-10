@@ -96,6 +96,9 @@ type Node struct {
 	// acceptorStore is a StableStore implementation for durable state
 	// It provides stable storage for many fields in raftState
 	acceptorStore StableStore
+
+	// The transport layer we use
+	trans Transport
 }
 
 // NewNode creates a new node.
