@@ -1,4 +1,6 @@
 # Kshaka
+[![CircleCI](https://circleci.com/gh/komuw/kshaka.svg?style=svg)](https://circleci.com/gh/komuw/kshaka)
+
 
 Kshaka is a Go implementation of the [CASPaxos](https://github.com/rystsov/caspaxos/blob/master/latex/caspaxos.pdf) consensus protocol.                              
 It's name is derived from the Kenyan hip hop group, Kalamashaka.                
