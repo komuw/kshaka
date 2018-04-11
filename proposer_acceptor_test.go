@@ -83,7 +83,8 @@ func TestPropose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			newstate, err := Propose(tt.pa, tt.args.key, tt.args.changeFunc)
+
+			newstate, err := tt.pa.Propose(tt.args.key, tt.args.changeFunc)
 			t.Logf("\nnewstate:%#+v, \nerr:%#+v", newstate, err)
 
 			if (err != nil) != tt.wantErr {

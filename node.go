@@ -55,14 +55,13 @@ Example usage:
 
 		// make a proposition; consensus via CASPaxos will
 		// happen and you will get the new state and any error back.
-		// NB: you can use any of the nodes as arg to Propose func
-		newstate, err := kshaka.Propose(node3, key, setFunc(val))
+		// NB: you can call Propose on any of the nodes
+		newstate, err := node2.Propose(key, setFunc(val))
 		if err != nil {
 			fmt.Printf("err: %v", err)
 		}
 		fmt.Printf("newstate: %v", newstate)
 	}
-
 
 
 TODO: add system design here.
@@ -116,6 +115,27 @@ func MingleNodes(nodes ...*Node) {
 			n.nodes = append(n.nodes, nodes...)
 		}
 	}
+}
+
+// Propose is the method that clients call when they want to submit
+// the f change function to a proposer.
+// It takes the key whose value you want to apply the ChangeFunction to
+// and also the ChangeFunction that will be applied to the value(contents) of that key.
+func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	// prepare phase
+	currentState, err := n.sendPrepare(key)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err)
+		return nil, err
+	}
+
+	// accept phase
+	newState, err := n.sendAccept(key, currentState, changeFunc)
+	if err != nil {
+		fmt.Printf("error: %+v\n", err)
+		return nil, err
+	}
+	return newState, nil
 }
 
 // AddMetadata adds metadata to a node. eg name=myNode, env=production

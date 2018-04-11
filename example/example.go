@@ -44,8 +44,8 @@ func main() {
 
 	// make a proposition; consensus via CASPaxos will
 	// happen and you will get the new state and any error back.
-	// NB: you can use any of the nodes as arg to Propose func
-	newstate, err := kshaka.Propose(node3, key, setFunc(val))
+	// NB: you can call Propose on any of the nodes
+	newstate, err := node2.Propose(key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
