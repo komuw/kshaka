@@ -97,8 +97,8 @@ type Node struct {
 	// It provides stable storage for many fields in raftState
 	acceptorStore StableStore
 
-	// The transport layer we use
-	trans Transport
+	// TODO: maybe add a transport interface
+	// so that lib users can roll their own
 }
 
 // NewNode creates a new node.
@@ -156,6 +156,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 		acceptedState acceptorState
 		err           error
 	}
+
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
