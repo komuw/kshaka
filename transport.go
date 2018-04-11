@@ -1,9 +1,8 @@
 package kshaka
 
-// TODO: maybe add a transport interface
-// so that lib users can roll their own
-
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+)
 
 type Args struct {
 	A, B int
@@ -38,3 +37,32 @@ if e != nil {
 	log.Fatal("listen error:", e)
 }
 go http.Serve(l, nil)
+
+type Transport interface{
+	// Propose is the method that clients call when they want to submit
+	// the f change function to a proposer.
+	// It takes the key whose value you want to apply the ChangeFunction to
+	// and also the ChangeFunction that will be applied to the value(contents) of that key.
+	transportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error)
+
+	transportPrepare(b ballot, key []byte) (acceptorState, error)
+	transportAccept(b ballot, key []byte, state []byte) (acceptorState, error)
+}
+
+// InmemTransport Implements the Transport interface, to allow kshaka/CASPaxos to be
+// tested in-memory without going over a network.
+type InmemTransport struct {
+	nodeAddrress
+	nodePort
+}
+
+/*
+NetworkTransport provides a network based transport that can be
+used to communicate with kshaka/CASPaxos on remote machines. It requires
+an underlying stream layer to provide a stream abstraction, which can
+be simple TCP, TLS, etc.
+*/
+type NetworkTransport struct {	
+	nodeAddrress
+	nodePort
+}

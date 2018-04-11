@@ -98,6 +98,7 @@ type Node struct {
 
 	// TODO: maybe add a transport interface
 	// so that lib users can roll their own
+	trans Transport
 }
 
 // NewNode creates a new node.
