@@ -12,3 +12,5 @@ coverage.txt
 
 # do not vendor, use package managers to get dependencies
 vendor/
+
+.DS_Store

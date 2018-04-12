@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -21,15 +20,6 @@ func main() {
 		panic(err)
 	}
 
-	// The function that will be applied by CASPaxos.
-	// This will be applied to the current value stored
-	// under the key passed into the Propose method of the proposer.
-	var setFunc = func(val []byte) kshaka.ChangeFunction {
-		return func(current []byte) ([]byte, error) {
-			return val, nil
-		}
-	}
-
 	// Create a Node with a list of additional nodes.
 	// Number of nodes needed for quorom ought to be >= 3.
 
@@ -41,24 +31,14 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore)
 	node3 := kshaka.NewNode(3, boltStore)
 
+	// TODO: use rpc transport
 	transport := &kshaka.InmemTransport{Node: node1}
+
 	node1.AddTransport(transport)
 	node2.AddTransport(transport)
 	node3.AddTransport(transport)
 
 	kshaka.MingleNodes(node1, node2, node3)
-
-	key := []byte("name")
-	val := []byte("Masta-Ace")
-
-	// make a proposition; consensus via CASPaxos will
-	// happen and you will get the new state and any error back.
-	// NB: you can call Propose on any of the nodes
-	newstate, err := node2.Trans.TransportPropose(key, setFunc(val))
-	if err != nil {
-		fmt.Printf("err: %v", err)
-	}
-	fmt.Printf("\n newstate: %v \n", newstate)
 
 	////
 	rpc.Register(node1)

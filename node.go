@@ -254,6 +254,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		return nil, errors.New(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
+	fmt.Println("ChangeFunc:::", changeFunc)
 	newState, err := changeFunc(currentState)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to apply the ChangeFunction to value at key:%v", key))
