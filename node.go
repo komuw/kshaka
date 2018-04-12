@@ -12,6 +12,7 @@ Example usage:
 	package main
 
 	import (
+	"github.com/mattn/go-tty"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
@@ -98,7 +99,7 @@ type Node struct {
 
 	// TODO: maybe add a transport interface
 	// so that lib users can roll their own
-	trans Transport
+	Trans Transport
 }
 
 // NewNode creates a new node.
@@ -122,7 +123,7 @@ func MingleNodes(nodes ...*Node) {
 // the f change function to a proposer.
 // It takes the key whose value you want to apply the ChangeFunction to
 // and also the ChangeFunction that will be applied to the value(contents) of that key.
-func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+func (n *Node) propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// prepare phase
 	currentState, err := n.sendPrepare(key)
 	if err != nil {
@@ -137,6 +138,11 @@ func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 		return nil, err
 	}
 	return newState, nil
+}
+
+// AddTransport adds transport to a node.
+func (n *Node) AddTransport(t Transport) {
+	n.Trans = t
 }
 
 // AddMetadata adds metadata to a node. eg name=myNode, env=production
@@ -181,7 +187,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
-			acceptedState, err := a.prepare(p.ballot, key)
+			acceptedState, err := a.Trans.TransportPrepare(p.ballot, key) // a.prepare(p.ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
 	}
@@ -262,7 +268,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	acceptResultChan := make(chan acceptResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
-			acceptedState, err := a.accept(p.ballot, key, newState)
+			acceptedState, err := a.Trans.TransportAccept(p.ballot, key, newState) // a.accept(p.ballot, key, newState)
 			acceptResultChan <- acceptResult{acceptedState, err}
 		}(a)
 	}

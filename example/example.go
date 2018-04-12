@@ -37,6 +37,11 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore)
 	node3 := kshaka.NewNode(3, boltStore)
 
+	transport := &kshaka.InmemTransport{Node: node1}
+	node1.AddTransport(transport)
+	node2.AddTransport(transport)
+	node3.AddTransport(transport)
+
 	kshaka.MingleNodes(node1, node2, node3)
 
 	key := []byte("name")
@@ -45,9 +50,9 @@ func main() {
 	// make a proposition; consensus via CASPaxos will
 	// happen and you will get the new state and any error back.
 	// NB: you can call Propose on any of the nodes
-	newstate, err := node2.Propose(key, setFunc(val))
+	newstate, err := node2.Trans.TransportPropose(key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
-	fmt.Printf("newstate: %v", newstate)
+	fmt.Printf("\n newstate: %v \n", newstate)
 }
