@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"net/rpc"
 
 	"github.com/hashicorp/raft-boltdb"
 	"github.com/komuw/kshaka"
@@ -55,4 +59,13 @@ func main() {
 		fmt.Printf("err: %v", err)
 	}
 	fmt.Printf("\n newstate: %v \n", newstate)
+
+	////
+	rpc.Register(node1)
+	rpc.HandleHTTP()
+	l, e := net.Listen("tcp", ":12000")
+	if e != nil {
+		log.Fatal("listen error:", e)
+	}
+	http.Serve(l, nil)
 }

@@ -1,6 +1,7 @@
 package kshaka
 
 import (
+	"fmt"
 	"net/rpc"
 )
 
@@ -119,4 +120,35 @@ func (nt *NetworkTransport) TransportAccept(b ballot, key []byte, state []byte) 
 	// }
 	return acceptorState{}, nil
 
+}
+
+func (nt *NetworkTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+	_, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
+	if err != nil {
+		return nil, err
+	}
+
+	// makes a Synchronous call. there are also async versions of this??
+	// err = client.Call("Arith.Multiply", args, &reply)
+	// if err != nil {
+	// 	return acceptorState{}, err
+	// }
+	return nil, nil
+
+}
+
+type Args struct {
+	Key        []byte
+	ChangeFunc ChangeFunction
+}
+
+func (n *Node) Proposition(args *Args, newState *[]byte) error {
+	fmt.Println("Proposition called::", args, newState)
+	s, err := n.propose(args.Key, args.ChangeFunc)
+	if err != nil {
+		fmt.Println("Proposition error::", err)
+		return err
+	}
+	newState = &s
+	return nil
 }
