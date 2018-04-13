@@ -24,7 +24,7 @@ func main() {
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	args := kshaka.Args{Key: key, ChangeFunc: setFunc(val)}
+	args := kshaka.PropositionArgs{Key: key, ChangeFunc: setFunc(val)}
 
 	var reply []byte
 

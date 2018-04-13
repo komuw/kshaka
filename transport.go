@@ -137,12 +137,12 @@ func (nt *NetworkTransport) TransportPropose(key []byte, changeFunc ChangeFuncti
 
 }
 
-type Args struct {
+type PropositionArgs struct {
 	Key        []byte
 	ChangeFunc ChangeFunction
 }
 
-func (n *Node) Proposition(args *Args, newState *[]byte) error {
+func (n *Node) Proposition(args *PropositionArgs, newState *[]byte) error {
 	fmt.Println("Proposition called::")
 	fmt.Println("Key, ChangeFunc::", args)
 	fmt.Println("newState::", newState)
