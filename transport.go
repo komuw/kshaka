@@ -143,7 +143,10 @@ type Args struct {
 }
 
 func (n *Node) Proposition(args *Args, newState *[]byte) error {
-	fmt.Println("Proposition called::", args, newState)
+	fmt.Println("Proposition called::")
+	fmt.Println("Key, ChangeFunc::", args)
+	fmt.Println("newState::", newState)
+	fmt.Println()
 	s, err := n.propose(args.Key, args.ChangeFunc)
 	if err != nil {
 		fmt.Println("Proposition error::", err)
