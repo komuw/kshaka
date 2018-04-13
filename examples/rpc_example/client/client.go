@@ -24,12 +24,12 @@ func main() {
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	args := kshaka.PropositionArgs{Key: key, ChangeFunc: setFunc(val)}
+	args := kshaka.ProposeArgs{Key: key, ChangeFunc: setFunc(val)}
 
 	var reply []byte
 
 	// makes a Synchronous call. there are also async versions of this??
-	err = client.Call("Node.Proposition", args, &reply)
+	err = client.Call("Node.ProposeRPC", args, &reply)
 	if err != nil {
 		fmt.Println()
 		fmt.Println("client error 2::", err)

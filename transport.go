@@ -137,12 +137,12 @@ func (nt *NetworkTransport) TransportPropose(key []byte, changeFunc ChangeFuncti
 
 }
 
-type PropositionArgs struct {
+type ProposeArgs struct {
 	Key        []byte
 	ChangeFunc ChangeFunction
 }
 
-func (n *Node) Proposition(args *PropositionArgs, newState *[]byte) error {
+func (n *Node) ProposeRPC(args *ProposeArgs, newState *[]byte) error {
 	fmt.Println("Proposition called::")
 	fmt.Println("Key, ChangeFunc::", args)
 	fmt.Println("newState::", newState)
@@ -155,3 +155,5 @@ func (n *Node) Proposition(args *PropositionArgs, newState *[]byte) error {
 	newState = &s
 	return nil
 }
+
+// func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
