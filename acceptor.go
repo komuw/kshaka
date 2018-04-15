@@ -22,7 +22,7 @@ func promisedBallotKey(key []byte) []byte {
 	return []byte(fmt.Sprintf("__PROMISED__BALLOT__KEY__c8c07b0c-3598-11e8-98b8-97a4ad1feb35__d1a0ca9c-3598-11e8-9c5f-c3c66e6b4439.%s", key))
 }
 
-type acceptorState struct {
+type AcceptorState struct {
 	promisedBallot ballot
 	acceptedBallot ballot
 	state          []byte
@@ -33,6 +33,6 @@ type acceptorState struct {
 // How to achieve this is an implementation detail.
 // eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 type acceptor interface {
-	prepare(b ballot, key []byte) (acceptorState, error)
-	accept(b ballot, key []byte, state []byte) (acceptorState, error)
+	prepare(b ballot, key []byte) (AcceptorState, error)
+	accept(b ballot, key []byte, state []byte) (AcceptorState, error)
 }

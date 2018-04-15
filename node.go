@@ -180,7 +180,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 
 	p.incBallot()
 	type prepareResult struct {
-		acceptedState acceptorState
+		acceptedState AcceptorState
 		err           error
 	}
 
@@ -263,7 +263,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	// think about this some more
 
 	type acceptResult struct {
-		acceptedState acceptorState
+		acceptedState AcceptorState
 		err           error
 	}
 	acceptResultChan := make(chan acceptResult, noAcceptors)
@@ -304,7 +304,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its ballot number.
-func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
+func (a *Node) prepare(b ballot, key []byte) (AcceptorState, error) {
 	// TODO: this locks are supposed to be per key
 	// not method wide
 	a.Lock()
@@ -317,7 +317,7 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 		state, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
+		return AcceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
@@ -327,7 +327,7 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 		acceptedBallotBytes, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
+		return AcceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 	}
 	var acceptedBallot ballot
 	if !bytes.Equal(acceptedBallotBytes, nil) {
@@ -336,11 +336,11 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 		dec := gob.NewDecoder(acceptedBallotReader)
 		err = dec.Decode(&acceptedBallot)
 		if err != nil {
-			return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
+			return AcceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 		}
 		// TODO: also take into account the Node ID to resolve tie-breaks
 		if acceptedBallot.Counter > b.Counter {
-			return acceptorState{acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.ID))
+			return AcceptorState{acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.ID))
 		}
 	}
 
@@ -351,7 +351,7 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 		promisedBallotBytes, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
+		return AcceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 	}
 	var promisedBallot ballot
 	if !bytes.Equal(promisedBallotBytes, nil) {
@@ -360,11 +360,11 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 		dec := gob.NewDecoder(promisedBallotReader)
 		err = dec.Decode(&promisedBallot)
 		if err != nil {
-			return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
+			return AcceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 		}
 		// TODO: also take into account the Node ID to resolve tie-breaks
 		if promisedBallot.Counter > b.Counter {
-			return acceptorState{promisedBallot: promisedBallot, acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, promisedBallot, a.ID))
+			return AcceptorState{promisedBallot: promisedBallot, acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, promisedBallot, a.ID))
 		}
 	}
 
@@ -373,19 +373,19 @@ func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
 	enc := gob.NewEncoder(&ballotBuffer)
 	err = enc.Encode(b)
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to encode ballot:%v", b))
+		return AcceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to encode ballot:%v", b))
 	}
 
 	err = a.acceptorStore.Set(promisedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to flush ballot:%v to disk", b))
+		return AcceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to flush ballot:%v to disk", b))
 	}
-	return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: b}, nil
+	return AcceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: b}, nil
 }
 
 // Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
 // Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation
-func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error) {
+func (a *Node) accept(b ballot, key []byte, state []byte) (AcceptorState, error) {
 	/*
 		Yes, acceptors should store tuple (promised ballot, accepted ballot and an accepted value) per key.
 		Proposers, unlike acceptors, may use the same ballot number sequence.
@@ -405,7 +405,7 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		state, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
+		return AcceptorState{}, errors.Wrap(err, fmt.Sprintf("unable to get state for key:%v from acceptor:%v", key, a.ID))
 	}
 
 	acceptedBallotBytes, err := a.acceptorStore.Get(acceptedBallotKey(key))
@@ -415,7 +415,7 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		acceptedBallotBytes, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
+		return AcceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 	}
 
 	var acceptedBallot ballot
@@ -425,11 +425,11 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		dec := gob.NewDecoder(acceptedBallotReader)
 		err = dec.Decode(&acceptedBallot)
 		if err != nil {
-			return acceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
+			return AcceptorState{state: state}, errors.Wrap(err, fmt.Sprintf("unable to get acceptedBallot of acceptor:%v", a.ID))
 		}
 		// TODO: also take into account the Node ID to resolve tie-breaks
 		if acceptedBallot.Counter > b.Counter {
-			return acceptorState{acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.ID))
+			return AcceptorState{acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, acceptedBallot, a.ID))
 		}
 	}
 
@@ -440,7 +440,7 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		promisedBallotBytes, err = nil, nil
 	}
 	if err != nil {
-		return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
+		return AcceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 	}
 	var promisedBallot ballot
 	if !bytes.Equal(promisedBallotBytes, nil) {
@@ -449,25 +449,25 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 		dec := gob.NewDecoder(promisedBallotReader)
 		err = dec.Decode(&promisedBallot)
 		if err != nil {
-			return acceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
+			return AcceptorState{state: state, acceptedBallot: acceptedBallot}, errors.Wrap(err, fmt.Sprintf("unable to get promisedBallot of acceptor:%v", a.ID))
 		}
 		// TODO: also take into account the Node ID to resolve tie-breaks
 		if promisedBallot.Counter > b.Counter {
-			return acceptorState{promisedBallot: promisedBallot, acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, promisedBallot, a.ID))
+			return AcceptorState{promisedBallot: promisedBallot, acceptedBallot: acceptedBallot, state: state}, errors.New(fmt.Sprintf("submitted ballot:%v is less than ballot:%v of acceptor:%v", b, promisedBallot, a.ID))
 		}
 	}
 
 	// erase promised ballot
 	err = a.acceptorStore.Set(promisedBallotKey(key), nil)
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to erase ballot:%v", b))
+		return AcceptorState{acceptedBallot: acceptedBallot, state: state, promisedBallot: promisedBallot}, errors.Wrap(err, fmt.Sprintf("unable to erase ballot:%v", b))
 	}
 
 	var ballotBuffer bytes.Buffer
 	enc := gob.NewEncoder(&ballotBuffer)
 	err = enc.Encode(b)
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, errors.Wrap(err, fmt.Sprintf("unable to encode ballot:%v", b))
+		return AcceptorState{acceptedBallot: acceptedBallot, state: state}, errors.Wrap(err, fmt.Sprintf("unable to encode ballot:%v", b))
 	}
 	// TODO. NB: it is possible, from the following logic, for an acceptor to accept a ballot
 	// but not accept the new state/value. ie if the call to acceptorStore.Set(acceptedBallotKey, ballotBuffer.Bytes()) succeeds
@@ -475,14 +475,14 @@ func (a *Node) accept(b ballot, key []byte, state []byte) (acceptorState, error)
 	// we should think about the ramifications of that for a second.
 	err = a.acceptorStore.Set(acceptedBallotKey(key), ballotBuffer.Bytes())
 	if err != nil {
-		return acceptorState{acceptedBallot: acceptedBallot, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush ballot:%v to disk", b))
+		return AcceptorState{acceptedBallot: acceptedBallot, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush ballot:%v to disk", b))
 	}
 
 	err = a.acceptorStore.Set(key, state)
 	if err != nil {
-		return acceptorState{acceptedBallot: b, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush the new state:%v to disk", state))
+		return AcceptorState{acceptedBallot: b, state: state}, errors.Wrap(err, fmt.Sprintf("unable to flush the new state:%v to disk", state))
 	}
 
-	return acceptorState{acceptedBallot: b, state: state}, nil
+	return AcceptorState{acceptedBallot: b, state: state}, nil
 
 }

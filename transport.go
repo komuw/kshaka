@@ -2,7 +2,8 @@ package kshaka
 
 import (
 	"fmt"
-	"net/rpc"
+	"net/http"
+	"time"
 )
 
 // type Args struct {
@@ -59,8 +60,8 @@ type Transport interface {
 	// and also the ChangeFunction that will be applied to the value(contents) of that key.
 	TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error)
 
-	TransportPrepare(b ballot, key []byte) (acceptorState, error)
-	TransportAccept(b ballot, key []byte, state []byte) (acceptorState, error)
+	TransportPrepare(b ballot, key []byte) (AcceptorState, error)
+	TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error)
 }
 
 // InmemTransport Implements the Transport interface, to allow kshaka/CASPaxos to be
@@ -71,11 +72,11 @@ type InmemTransport struct {
 	Node         *Node
 }
 
-func (it *InmemTransport) TransportPrepare(b ballot, key []byte) (acceptorState, error) {
+func (it *InmemTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
 	return it.Node.prepare(b, key)
 
 }
-func (it *InmemTransport) TransportAccept(b ballot, key []byte, state []byte) (acceptorState, error) {
+func (it *InmemTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
 	return it.Node.accept(b, key, state)
 }
 func (it *InmemTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
@@ -83,95 +84,32 @@ func (it *InmemTransport) TransportPropose(key []byte, changeFunc ChangeFunction
 }
 
 /*
-NetworkTransport provides a network based transport that can be
+HttpTransport provides a network based transport that can be
 used to communicate with kshaka/CASPaxos on remote machines. It requires
 an underlying stream layer to provide a stream abstraction, which can
 be simple TCP, TLS, etc.
 */
-type NetworkTransport struct {
+type HttpTransport struct {
 	NodeAddrress string
 	NodePort     string
+	URI          string
 }
 
-type PrepareArgs struct {
-	B   ballot
-	Key []byte
+var HttpTransportClientTimeout = time.Second * 3
+var HttpTransportClient = &http.Client{Timeout: HttpTransportClientTimeout}
+
+func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
+	//   response, _ := netClient.Get(url)
+
+	return AcceptorState{}, nil
 }
 
-func (nt *NetworkTransport) TransportPrepare(b ballot, key []byte) (acceptorState, error) {
-	client, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
-	if err != nil {
-		return acceptorState{}, err
-	}
-	args := PrepareArgs{B: b, Key: key}
-	reply := acceptorState{}
-	// makes a Synchronous call. there are also async versions of this??
-	err = client.Call("Node.PrepareRPC", args, &reply)
-	if err != nil {
-		return acceptorState{}, err
-	}
-	return reply, nil
+func (ht *HttpTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
+	return AcceptorState{}, nil
 }
 
-func (a *Node) PrepareRPC(args *PrepareArgs, aState *acceptorState) error {
-	acceptorState, err := a.prepare(args.B, args.Key)
-	if err != nil {
-		return err
-	}
-	aState = &acceptorState
-	return nil
-}
-
-type AcceptArgs struct {
-	B     ballot
-	Key   []byte
-	State []byte
-}
-
-func (nt *NetworkTransport) TransportAccept(b ballot, key []byte, state []byte) (acceptorState, error) {
-	client, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
-	if err != nil {
-		return acceptorState{}, err
-	}
-
-	args := AcceptArgs{B: b, Key: key, State: state}
-	reply := acceptorState{}
-	// makes a Synchronous call. there are also async versions of this??
-	err = client.Call("Node.AcceptRPC", args, &reply)
-	if err != nil {
-		return acceptorState{}, err
-	}
-	return reply, nil
-
-}
-
-func (a *Node) AcceptRPC(args *AcceptArgs, aState *acceptorState) error {
-	acceptorState, err := a.accept(args.B, args.Key, args.State)
-	if err != nil {
-		return err
-	}
-	aState = &acceptorState
-	return nil
-}
-
-func (nt *NetworkTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
-	_, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
-	if err != nil {
-		return nil, err
-	}
-
-	// makes a Synchronous call. there are also async versions of this??
-	// err = client.Call("Arith.Multiply", args, &reply)
-	// if err != nil {
-	// 	return acceptorState{}, err
-	// }
+func (ht *HttpTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	return nil, nil
-
-}
-
-type ProposeArgs struct {
-	Key        []byte
-	ChangeFunc ChangeFunction
 }
 
 func (n *Node) ProposeRPC(args *ProposeArgs, newState *[]byte) error {
