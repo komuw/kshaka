@@ -93,33 +93,65 @@ type NetworkTransport struct {
 	NodePort     string
 }
 
+type PrepareArgs struct {
+	B   ballot
+	Key []byte
+}
+
 func (nt *NetworkTransport) TransportPrepare(b ballot, key []byte) (acceptorState, error) {
-	_, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
+	client, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
 	if err != nil {
 		return acceptorState{}, err
 	}
-
+	args := PrepareArgs{B: b, Key: key}
+	reply := acceptorState{}
 	// makes a Synchronous call. there are also async versions of this??
-	// err = client.Call("Arith.Multiply", args, &reply)
-	// if err != nil {
-	// 	return acceptorState{}, err
-	// }
-	return acceptorState{}, nil
+	err = client.Call("Node.PrepareRPC", args, &reply)
+	if err != nil {
+		return acceptorState{}, err
+	}
+	return reply, nil
+}
+
+func (a *Node) PrepareRPC(args *PrepareArgs, aState *acceptorState) error {
+	acceptorState, err := a.prepare(args.B, args.Key)
+	if err != nil {
+		return err
+	}
+	aState = &acceptorState
+	return nil
+}
+
+type AcceptArgs struct {
+	B     ballot
+	Key   []byte
+	State []byte
 }
 
 func (nt *NetworkTransport) TransportAccept(b ballot, key []byte, state []byte) (acceptorState, error) {
-	_, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
+	client, err := rpc.DialHTTP("tcp", nt.NodeAddrress+nt.NodePort)
 	if err != nil {
 		return acceptorState{}, err
 	}
 
+	args := AcceptArgs{B: b, Key: key, State: state}
+	reply := acceptorState{}
 	// makes a Synchronous call. there are also async versions of this??
-	// err = client.Call("Arith.Multiply", args, &reply)
-	// if err != nil {
-	// 	return acceptorState{}, err
-	// }
-	return acceptorState{}, nil
+	err = client.Call("Node.AcceptRPC", args, &reply)
+	if err != nil {
+		return acceptorState{}, err
+	}
+	return reply, nil
 
+}
+
+func (a *Node) AcceptRPC(args *AcceptArgs, aState *acceptorState) error {
+	acceptorState, err := a.accept(args.B, args.Key, args.State)
+	if err != nil {
+		return err
+	}
+	aState = &acceptorState
+	return nil
 }
 
 func (nt *NetworkTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
@@ -155,5 +187,3 @@ func (n *Node) ProposeRPC(args *ProposeArgs, newState *[]byte) error {
 	newState = &s
 	return nil
 }
-
-// func (a *Node) prepare(b ballot, key []byte) (acceptorState, error) {
