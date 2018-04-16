@@ -9,8 +9,11 @@ import (
 	"github.com/komuw/kshaka"
 )
 
-func proposeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "propose handler %s!", r.URL.Path[1:])
+func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		n.Trans.TransportPropose(key []byte, changeFunc kshaka.ChangeFunction)
+		fmt.Fprintf(w, "propose handler %s!", r.URL.Path[1:])
+	}
 }
 
 func main() {
@@ -51,7 +54,7 @@ func main() {
 
 	////
 
-	http.HandleFunc("/propose", proposeHandler)
+	http.HandleFunc("/propose", proposeHandler(node1))
 	go func() {
 		log.Fatal(http.ListenAndServe(":15001", nil))
 	}()
