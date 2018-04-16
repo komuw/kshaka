@@ -1,7 +1,10 @@
 package kshaka
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -95,33 +98,94 @@ type HttpTransport struct {
 	URI          string
 }
 
-var HttpTransportClientTimeout = time.Second * 3
-var HttpTransportClient = &http.Client{Timeout: HttpTransportClientTimeout}
-
 func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
-	//   response, _ := netClient.Get(url)
-
+	type prepareRequest struct {
+		B   ballot
+		Key []byte
+	}
+	prepReq := prepareRequest{B: b, Key: key}
+	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.URI
+	prepReqJSON, err := json.Marshal(prepReq)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(prepReqJSON))
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	// todo: ideally, client should be resused across multiple requests
+	client := &http.Client{Timeout: time.Second * 3}
+	resp, err := client.Do(req)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	fmt.Println("TransportPrepare response body::", body)
 	return AcceptorState{}, nil
 }
 
 func (ht *HttpTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
+	type acceptRequest struct {
+		B     ballot
+		Key   []byte
+		State []byte
+	}
+	acceptReq := acceptRequest{B: b, Key: key, State: state}
+	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.URI
+	acceptReqJSON, err := json.Marshal(acceptReq)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(acceptReqJSON))
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: time.Second * 3}
+	resp, err := client.Do(req)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return AcceptorState{}, err
+	}
+	fmt.Println("TransportAccept response body::", body)
 	return AcceptorState{}, nil
 }
 
 func (ht *HttpTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
-	return nil, nil
-}
-
-func (n *Node) ProposeRPC(args *ProposeArgs, newState *[]byte) error {
-	fmt.Println("Proposition called::")
-	fmt.Println("Key, ChangeFunc::", args)
-	fmt.Println("newState::", newState)
-	fmt.Println()
-	s, err := n.propose(args.Key, args.ChangeFunc)
-	if err != nil {
-		fmt.Println("Proposition error::", err)
-		return err
+	type proposeRequest struct {
+		Key        []byte
+		changeFunc ChangeFunction
 	}
-	newState = &s
-	return nil
+	propReq := proposeRequest{Key: key, changeFunc: changeFunc}
+	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.URI
+	propReqJSON, err := json.Marshal(propReq)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(propReqJSON))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: time.Second * 3}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("TransportPropose response body::", body)
+	return nil, nil
 }
