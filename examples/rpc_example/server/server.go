@@ -52,5 +52,13 @@ func main() {
 	////
 
 	http.HandleFunc("/propose", proposeHandler)
-	log.Fatal(http.ListenAndServe(":15001", nil))
+	go func() {
+		log.Fatal(http.ListenAndServe(":15001", nil))
+	}()
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":15002", nil))
+	}()
+
+	log.Fatal(http.ListenAndServe(":15003", nil))
 }
