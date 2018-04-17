@@ -38,8 +38,8 @@ func main() {
 	node3 := kshaka.NewNode(3, boltStore)
 
 	transport1 := &kshaka.InmemTransport{Node: node1}
-	transport2 := &kshaka.InmemTransport{Node: node1}
-	transport3 := &kshaka.InmemTransport{Node: node1}
+	transport2 := &kshaka.InmemTransport{Node: node2}
+	transport3 := &kshaka.InmemTransport{Node: node3}
 	node1.AddTransport(transport1)
 	node2.AddTransport(transport2)
 	node3.AddTransport(transport3)
