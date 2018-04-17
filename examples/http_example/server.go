@@ -11,7 +11,7 @@ import (
 
 func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		n.Trans.TransportPropose(key []byte, changeFunc kshaka.ChangeFunction)
+
 		fmt.Fprintf(w, "propose handler %s!", r.URL.Path[1:])
 	}
 }
