@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -9,9 +11,27 @@ import (
 	"github.com/komuw/kshaka"
 )
 
+type TransportProposeRequest struct {
+	Key []byte
+	Val []byte
+}
+
 func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		fmt.Println("cool")
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		proposeRequest := TransportProposeRequest{}
+		err = json.Unmarshal(body, &proposeRequest)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("propose request body::", string(body))
+		fmt.Printf("\n proposeRequest: %+v %+v  \n", string(proposeRequest.Key), string(proposeRequest.Val))
 		fmt.Fprintf(w, "propose handler %s!", r.URL.Path[1:])
 	}
 }

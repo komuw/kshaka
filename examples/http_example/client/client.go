@@ -7,21 +7,26 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/komuw/kshaka"
 )
 
+type TransportProposeRequest struct {
+	Key []byte
+	Val []byte
+}
+
 func main() {
-	var setFunc = func(val []byte) kshaka.ChangeFunction {
-		return func(current []byte) ([]byte, error) {
-			return val, nil
-		}
-	}
+	// var setFunc = func(val []byte) kshaka.ChangeFunction {
+	// 	return func(current []byte) ([]byte, error) {
+	// 		return val, nil
+	// 	}
+	// }
+	// setFunc(val)
+
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	propReq := kshaka.TransportProposeRequest{Key: key, ChangeFunc: setFunc(val)}
-	url := "http://" + "127.0.0.1" + ":" + "15001" + "/propose"
+	propReq := TransportProposeRequest{Key: key, Val: val}
+	url := "http://" + "127.0.0.1" + ":" + "15003" + "/propose"
 	propReqJSON, err := json.Marshal(propReq)
 	if err != nil {
 		fmt.Printf("\n err: %+v \n", err)
