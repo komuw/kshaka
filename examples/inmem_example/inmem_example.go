@@ -37,10 +37,12 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore)
 	node3 := kshaka.NewNode(3, boltStore)
 
-	transport := &kshaka.InmemTransport{Node: node1}
-	node1.AddTransport(transport)
-	node2.AddTransport(transport)
-	node3.AddTransport(transport)
+	transport1 := &kshaka.InmemTransport{Node: node1}
+	transport2 := &kshaka.InmemTransport{Node: node1}
+	transport3 := &kshaka.InmemTransport{Node: node1}
+	node1.AddTransport(transport1)
+	node2.AddTransport(transport2)
+	node3.AddTransport(transport3)
 
 	kshaka.MingleNodes(node1, node2, node3)
 
