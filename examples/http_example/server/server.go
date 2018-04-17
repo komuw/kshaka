@@ -12,9 +12,21 @@ import (
 )
 
 type TransportProposeRequest struct {
-	Key []byte
-	Val []byte
+	Key          []byte
+	Val          []byte
+	FunctionName string
 }
+
+var setFunc = func(val []byte) kshaka.ChangeFunction {
+	return func(current []byte) ([]byte, error) {
+		return val, nil
+	}
+}
+var readFunc kshaka.ChangeFunction = func(current []byte) ([]byte, error) {
+	return current, nil
+}
+
+// setFunc(val)
 
 func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +44,23 @@ func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 		}
 		fmt.Println("propose request body::", string(body))
 		fmt.Printf("\n proposeRequest: %+v %+v  \n", string(proposeRequest.Key), string(proposeRequest.Val))
-		fmt.Fprintf(w, "propose handler %s!", r.URL.Path[1:])
+
+		changeFunc := readFunc
+		if proposeRequest.FunctionName == "setFunc" {
+			changeFunc = setFunc(proposeRequest.Val)
+		}
+		newState, err := n.Propose(proposeRequest.Key, changeFunc)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("newState::", newState, string(newState))
+
+		_, err = w.Write(newState)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
 	}
 }
 

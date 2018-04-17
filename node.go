@@ -123,7 +123,7 @@ func MingleNodes(nodes ...*Node) {
 // the f change function to a proposer.
 // It takes the key whose value you want to apply the ChangeFunction to
 // and also the ChangeFunction that will be applied to the value(contents) of that key.
-func (n *Node) propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
+func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	// prepare phase
 	currentState, err := n.sendPrepare(key)
 	if err != nil {

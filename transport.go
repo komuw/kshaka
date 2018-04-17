@@ -29,7 +29,7 @@ type InmemTransport struct {
 }
 
 func (it *InmemTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
-	return it.Node.propose(key, changeFunc)
+	return it.Node.Propose(key, changeFunc)
 }
 func (it *InmemTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
 	return it.Node.prepare(b, key)
@@ -76,6 +76,7 @@ func (ht *HttpTransport) TransportPropose(key []byte, changeFunc ChangeFunction)
 }
 
 func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
+	fmt.Println("TransportPrepare called....")
 	type prepareRequest struct {
 		B   ballot
 		Key []byte
@@ -107,6 +108,7 @@ func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, 
 }
 
 func (ht *HttpTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
+	fmt.Println("TransportAccept called....")
 	type acceptRequest struct {
 		B     ballot
 		Key   []byte

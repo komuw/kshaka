@@ -10,22 +10,17 @@ import (
 )
 
 type TransportProposeRequest struct {
-	Key []byte
-	Val []byte
+	Key          []byte
+	Val          []byte
+	FunctionName string
 }
 
 func main() {
-	// var setFunc = func(val []byte) kshaka.ChangeFunction {
-	// 	return func(current []byte) ([]byte, error) {
-	// 		return val, nil
-	// 	}
-	// }
-	// setFunc(val)
 
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	propReq := TransportProposeRequest{Key: key, Val: val}
+	propReq := TransportProposeRequest{Key: key, Val: val, FunctionName: "setFunc"}
 	url := "http://" + "127.0.0.1" + ":" + "15003" + "/propose"
 	propReqJSON, err := json.Marshal(propReq)
 	if err != nil {
@@ -50,5 +45,5 @@ func main() {
 		fmt.Printf("\n err: %+v \n", err)
 		return
 	}
-	fmt.Println("client Propose response body::", string(body))
+	fmt.Println("client Propose response body::", body, string(body))
 }
