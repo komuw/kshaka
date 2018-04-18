@@ -73,7 +73,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -130,6 +129,7 @@ func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 		fmt.Printf("error: %+v\n", err)
 		return nil, err
 	}
+	fmt.Printf("currentState: %+v %+v\n", currentState, string(currentState))
 
 	// accept phase
 	newState, err := n.sendAccept(key, currentState, changeFunc)
@@ -137,6 +137,8 @@ func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 		fmt.Printf("error: %+v\n", err)
 		return nil, err
 	}
+	fmt.Printf("newState: %+v %+v\n", newState, string(newState))
+
 	return newState, nil
 }
 
@@ -187,8 +189,7 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
-			acceptedState, err := a.Trans.TransportPrepare(p.Ballot, key) // a.prepare(p.Ballot, key)
-			fmt.Println("PREPARE acceptedState, err::", acceptedState, err)
+			acceptedState, err := a.Trans.TransportPrepare(p.Ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
 	}
@@ -197,9 +198,6 @@ func (p *Node) sendPrepare(key []byte) ([]byte, error) {
 		res := <-prepareResultChan
 		if res.err != nil {
 			// conflict occured
-			// TODO: make the io.writer configurable
-			fmt.Fprintf(os.Stdout, "error:%+v", res.err)
-
 			numberConflicts++
 			if res.acceptedState.AcceptedBallot.Counter > highBallotConflict.Counter {
 				highBallotConflict = res.acceptedState.AcceptedBallot
@@ -255,7 +253,6 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		return nil, errors.New(fmt.Sprintf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key)))
 	}
 
-	fmt.Println("ChangeFunc:::", changeFunc)
 	newState, err := changeFunc(currentState)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to apply the ChangeFunction to value at key:%v", key))
@@ -270,8 +267,7 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	acceptResultChan := make(chan acceptResult, noAcceptors)
 	for _, a := range p.nodes {
 		go func(a *Node) {
-			acceptedState, err := a.Trans.TransportAccept(p.Ballot, key, newState) // a.accept(p.Ballot, key, newState)
-			fmt.Println("ACCEPT acceptedState, err::", acceptedState, err)
+			acceptedState, err := a.Trans.TransportAccept(p.Ballot, key, newState)
 			acceptResultChan <- acceptResult{acceptedState, err}
 		}(a)
 	}
@@ -280,7 +276,6 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		res := <-acceptResultChan
 		if res.err != nil {
 			// conflict occured
-			fmt.Fprintf(os.Stdout, "error:%+v", res.err)
 			numberConflicts++
 			if res.acceptedState.AcceptedBallot.Counter > p.Ballot.Counter {
 				highBallotConflict = res.acceptedState.AcceptedBallot
