@@ -23,9 +23,9 @@ func promisedBallotKey(key []byte) []byte {
 }
 
 type AcceptorState struct {
-	promisedBallot Ballot
-	acceptedBallot Ballot
-	state          []byte
+	PromisedBallot Ballot
+	AcceptedBallot Ballot
+	State          []byte
 }
 
 // Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.

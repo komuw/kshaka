@@ -88,11 +88,17 @@ func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 		}
 		fmt.Printf("\n aState::%v \n", aState)
 
-		// _, err = w.Write(aState)
-		// if err != nil {
-		// 	fmt.Printf("\n err: %+v \n", err)
-		// 	return
-		// }
+		acceptedState, err := json.Marshal(aState)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		_, err = w.Write(acceptedState)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("prepareHandler acceptedState::", acceptedState)
 	}
 }
 
@@ -120,11 +126,17 @@ func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) 
 		}
 		fmt.Printf("\n aState::%v \n", aState)
 
-		// _, err = w.Write(aState)
-		// if err != nil {
-		// 	fmt.Printf("\n err: %+v \n", err)
-		// 	return
-		// }
+		acceptedState, err := json.Marshal(aState)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		_, err = w.Write(acceptedState)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("acceptHandler acceptedState::", acceptedState)
 	}
 }
 

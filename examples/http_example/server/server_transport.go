@@ -31,33 +31,41 @@ type TransportPrepareRequest struct {
 
 func (ht *HttpTransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportPrepare called....")
+	acceptedState := kshaka.AcceptorState{}
+
 	prepReq := TransportPrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/prepare"
 	prepReqJSON, err := json.Marshal(prepReq)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(prepReqJSON))
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	// todo: ideally, client should be resused across multiple requests
 	client := &http.Client{Timeout: time.Second * 3}
 	resp, err := client.Do(req)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return kshaka.AcceptorState{}, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+		return acceptedState, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
-	fmt.Println("TransportPrepare response body::", body, string(body))
-	return kshaka.AcceptorState{}, nil
+
+	err = json.Unmarshal(body, &acceptedState)
+	if err != nil {
+		return acceptedState, err
+	}
+
+	fmt.Println("TransportPrepare response body::", body, string(body), acceptedState)
+	return acceptedState, nil
 }
 
 type TransportAcceptRequest struct {
@@ -68,30 +76,37 @@ type TransportAcceptRequest struct {
 
 func (ht *HttpTransport) TransportAccept(b kshaka.Ballot, key []byte, state []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportAccept called....")
+	acceptedState := kshaka.AcceptorState{}
 	acceptReq := TransportAcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/accept"
 	acceptReqJSON, err := json.Marshal(acceptReq)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(acceptReqJSON))
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{Timeout: time.Second * 3}
 	resp, err := client.Do(req)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return kshaka.AcceptorState{}, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+		return acceptedState, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return kshaka.AcceptorState{}, err
+		return acceptedState, err
 	}
-	fmt.Println("TransportAccept response body::", body)
-	return kshaka.AcceptorState{}, nil
+
+	err = json.Unmarshal(body, &acceptedState)
+	if err != nil {
+		return acceptedState, err
+	}
+
+	fmt.Println("TransportAccept response body::", body, acceptedState)
+	return acceptedState, nil
 }
