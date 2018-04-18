@@ -298,7 +298,8 @@ func (p *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	return newState, nil
 }
 
-// Acceptor returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
+// Prepare handles the prepare phase for an acceptor(node).
+// An Acceptor returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
 // Persists the Ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet)
 // or with a tuple of an accepted value and its Ballot number.
 func (a *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
@@ -380,7 +381,8 @@ func (a *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	return AcceptorState{AcceptedBallot: acceptedBallot, State: state, PromisedBallot: b}, nil
 }
 
-// Acceptor returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
+// Accept handles the accept phase for an acceptor(node).
+// An Acceptor returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
 // Erases the promise, marks the received tuple (Ballot number, value) as the accepted value and returns a confirmation
 func (a *Node) Accept(b Ballot, key []byte, state []byte) (AcceptorState, error) {
 	/*
