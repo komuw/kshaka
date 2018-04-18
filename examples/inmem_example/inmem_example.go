@@ -52,7 +52,7 @@ func main() {
 	// make a proposition; consensus via CASPaxos will
 	// happen and you will get the new state and any error back.
 	// NB: you can call Propose on any of the nodes
-	newstate, err := node2.Trans.TransportPropose(key, setFunc(val))
+	newstate, err := node2.Propose(key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}

@@ -12,7 +12,6 @@ Example usage:
 	package main
 
 	import (
-	"github.com/mattn/go-tty"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
@@ -32,7 +31,7 @@ Example usage:
 		// The function that will be applied by CASPaxos.
 		// This will be applied to the current value stored
 		// under the key passed into the Propose method of the proposer.
-		var setFunc = func(val []byte) kshakn.ChangeFunction {
+		var setFunc = func(val []byte) kshaka.ChangeFunction {
 			return func(current []byte) ([]byte, error) {
 				return val, nil
 			}
@@ -45,11 +44,18 @@ Example usage:
 		// and are located in the same server/machine.
 		// In practice however, nodes ideally should be
 		// in different machines each with its own store.
-		node1 := kshakn.NewNode(1, boltStore)
-		node2 := kshakn.NewNode(2, boltStore)
-		node3 := kshakn.NewNode(3, boltStore)
+		node1 := kshaka.NewNode(1, boltStore)
+		node2 := kshaka.NewNode(2, boltStore)
+		node3 := kshaka.NewNode(3, boltStore)
 
-		kshakn.MingleNodes(node1, node2, node3)
+		transport1 := &kshaka.InmemTransport{Node: node1}
+		transport2 := &kshaka.InmemTransport{Node: node2}
+		transport3 := &kshaka.InmemTransport{Node: node3}
+		node1.AddTransport(transport1)
+		node2.AddTransport(transport2)
+		node3.AddTransport(transport3)
+
+		kshaka.MingleNodes(node1, node2, node3)
 
 		key := []byte("name")
 		val := []byte("Masta-Ace")
@@ -61,8 +67,9 @@ Example usage:
 		if err != nil {
 			fmt.Printf("err: %v", err)
 		}
-		fmt.Printf("newstate: %v", newstate)
+		fmt.Printf("\n newstate: %v \n", newstate)
 	}
+
 
 
 TODO: add system design here.

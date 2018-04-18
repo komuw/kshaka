@@ -56,6 +56,13 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore)
 	node3 := kshaka.NewNode(3, boltStore)
 
+	transport1 := &kshaka.InmemTransport{Node: node1}
+	transport2 := &kshaka.InmemTransport{Node: node2}
+	transport3 := &kshaka.InmemTransport{Node: node3}
+	node1.AddTransport(transport1)
+	node2.AddTransport(transport2)
+	node3.AddTransport(transport3)
+
 	kshaka.MingleNodes(node1, node2, node3)
 
 	key := []byte("name")
@@ -68,7 +75,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("err: %v", err)
 	}
-	fmt.Printf("newstate: %v", newstate)
+	fmt.Printf("\n newstate: %v \n", newstate)
 }
 ```               
 
