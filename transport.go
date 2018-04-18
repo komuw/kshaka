@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type Transport interface {
@@ -99,6 +101,9 @@ func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, 
 		return AcceptorState{}, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return AcceptorState{}, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return AcceptorState{}, err
@@ -131,6 +136,9 @@ func (ht *HttpTransport) TransportAccept(b ballot, key []byte, state []byte) (Ac
 		return AcceptorState{}, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return AcceptorState{}, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return AcceptorState{}, err
