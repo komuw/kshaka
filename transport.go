@@ -12,12 +12,6 @@ import (
 )
 
 type Transport interface {
-	// Propose is the method that clients call when they want to submit
-	// the f change function to a proposer.
-	// It takes the key whose value you want to apply the ChangeFunction to
-	// and also the ChangeFunction that will be applied to the value(contents) of that key.
-	TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error)
-
 	TransportPrepare(b Ballot, key []byte) (AcceptorState, error)
 	TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error)
 }
@@ -30,9 +24,6 @@ type InmemTransport struct {
 	Node         *Node
 }
 
-func (it *InmemTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
-	return it.Node.Propose(key, changeFunc)
-}
 func (it *InmemTransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
 	return it.Node.Prepare(b, key)
 }
@@ -49,32 +40,6 @@ be simple TCP, TLS, etc.
 type HttpTransport struct {
 	NodeAddrress string
 	NodePort     string
-}
-
-func (ht *HttpTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
-	// propReq := TransportProposeRequest{Key: key, ChangeFunc: changeFunc}
-	// url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/propose"
-	// propReqJSON, err := json.Marshal(propReq)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// req, err := http.NewRequest("POST", url, bytes.NewBuffer(propReqJSON))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// req.Header.Set("Content-Type", "application/json")
-	// client := &http.Client{Timeout: time.Second * 3}
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer resp.Body.Close()
-	// body, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// fmt.Println("TransportPropose response body::", body)
-	return nil, nil
 }
 
 func (ht *HttpTransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
