@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -29,23 +28,19 @@ var readFunc kshaka.ChangeFunction = func(current []byte) ([]byte, error) {
 	return current, nil
 }
 
-// setFunc(val)
-
 func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		proposeRequest := HTTPtransportProposeRequest{}
 		err = json.Unmarshal(body, &proposeRequest)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("propose request body::", string(body))
-		fmt.Printf("\n proposeRequest: %+v %+v  \n", string(proposeRequest.Key), string(proposeRequest.Val))
 
 		changeFunc := readFunc
 		if proposeRequest.FunctionName == "setFunc" {
@@ -53,14 +48,13 @@ func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 		}
 		newState, err := n.Propose(proposeRequest.Key, changeFunc)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("newState::", newState, string(newState))
 
 		_, err = w.Write(newState)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -68,77 +62,67 @@ func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 
 func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("cool")
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		prepareRequest := kshaka.HTTPtransportPrepareRequest{}
 		err = json.Unmarshal(body, &prepareRequest)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("prepare request body::", string(body))
-		fmt.Printf("\n prepareRequest: %+v %+v  \n", string(prepareRequest.Key), prepareRequest.B)
 
 		aState, err := n.Prepare(prepareRequest.B, prepareRequest.Key)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Printf("\n aState::%v \n", aState)
 
 		acceptedState, err := json.Marshal(aState)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		_, err = w.Write(acceptedState)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("prepareHandler acceptedState::", acceptedState)
 	}
 }
 
 func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("cool")
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		acceptRequest := kshaka.HTTPtransportAcceptRequest{}
 		err = json.Unmarshal(body, &acceptRequest)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("accept request body::", string(body))
-		fmt.Printf("\n acceptRequest: %+v %+v  \n", string(acceptRequest.Key), acceptRequest.B)
 
 		aState, err := n.Accept(acceptRequest.B, acceptRequest.Key, acceptRequest.State)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Printf("\n aState::%v \n", aState)
 
 		acceptedState, err := json.Marshal(aState)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		_, err = w.Write(acceptedState)
 		if err != nil {
-			fmt.Printf("\n err: %+v \n", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println("acceptHandler acceptedState::", acceptedState)
 	}
 }
 
