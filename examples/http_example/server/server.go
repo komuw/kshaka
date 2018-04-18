@@ -72,7 +72,7 @@ func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 			fmt.Printf("\n err: %+v \n", err)
 			return
 		}
-		prepareRequest := TransportPrepareRequest{}
+		prepareRequest := HTTPtransportPrepareRequest{}
 		err = json.Unmarshal(body, &prepareRequest)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
@@ -110,7 +110,7 @@ func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) 
 			fmt.Printf("\n err: %+v \n", err)
 			return
 		}
-		acceptRequest := TransportAcceptRequest{}
+		acceptRequest := HTTPtransportAcceptRequest{}
 		err = json.Unmarshal(body, &acceptRequest)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
@@ -166,9 +166,9 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore2)
 	node3 := kshaka.NewNode(3, boltStore3)
 
-	transport1 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15001"}
-	transport2 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15002"}
-	transport3 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15003"}
+	transport1 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15001"}
+	transport2 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15002"}
+	transport3 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15003"}
 
 	node1.AddTransport(transport1)
 	node2.AddTransport(transport2)

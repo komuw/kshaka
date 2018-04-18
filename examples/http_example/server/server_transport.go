@@ -13,27 +13,23 @@ import (
 	"github.com/komuw/kshaka"
 )
 
-/*
-HttpTransport provides a network based transport that can be
-used to communicate with kshaka/CASPaxos on remote machines. It requires
-an underlying stream layer to provide a stream abstraction, which can
-be simple TCP, TLS, etc.
-*/
-type HttpTransport struct {
+// HTTPtransport provides a http based transport that can be
+// used to communicate with kshaka/CASPaxos on remote machines.
+type HTTPtransport struct {
 	NodeAddrress string
 	NodePort     string
 }
 
-type TransportPrepareRequest struct {
+type HTTPtransportPrepareRequest struct {
 	B   kshaka.Ballot
 	Key []byte
 }
 
-func (ht *HttpTransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.AcceptorState, error) {
+func (ht *HTTPtransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportPrepare called....")
 	acceptedState := kshaka.AcceptorState{}
 
-	prepReq := TransportPrepareRequest{B: b, Key: key}
+	prepReq := HTTPtransportPrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/prepare"
 	prepReqJSON, err := json.Marshal(prepReq)
 	if err != nil {
@@ -68,16 +64,16 @@ func (ht *HttpTransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.A
 	return acceptedState, nil
 }
 
-type TransportAcceptRequest struct {
+type HTTPtransportAcceptRequest struct {
 	B     kshaka.Ballot
 	Key   []byte
 	State []byte
 }
 
-func (ht *HttpTransport) TransportAccept(b kshaka.Ballot, key []byte, state []byte) (kshaka.AcceptorState, error) {
+func (ht *HTTPtransport) TransportAccept(b kshaka.Ballot, key []byte, state []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportAccept called....")
 	acceptedState := kshaka.AcceptorState{}
-	acceptReq := TransportAcceptRequest{B: b, Key: key, State: state}
+	acceptReq := HTTPtransportAcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/accept"
 	acceptReqJSON, err := json.Marshal(acceptReq)
 	if err != nil {
