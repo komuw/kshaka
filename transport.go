@@ -103,7 +103,7 @@ func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, 
 	if err != nil {
 		return AcceptorState{}, err
 	}
-	fmt.Println("TransportPrepare response body::", body)
+	fmt.Println("TransportPrepare response body::", body, string(body))
 	return AcceptorState{}, nil
 }
 
