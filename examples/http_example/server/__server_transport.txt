@@ -18,19 +18,25 @@ import (
 type HTTPtransport struct {
 	NodeAddrress string
 	NodePort     string
+	ProposeURI   string
+	PrepareURI   string
+	AcceptURI    string
 }
 
+// HTTPtransportPrepareRequest is the request sent during prepare phase
+// specifically for the HTTPtransport
 type HTTPtransportPrepareRequest struct {
 	B   kshaka.Ballot
 	Key []byte
 }
 
+// TransportPrepare implements the Transport interface.
 func (ht *HTTPtransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportPrepare called....")
 	acceptedState := kshaka.AcceptorState{}
 
 	prepReq := HTTPtransportPrepareRequest{B: b, Key: key}
-	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/prepare"
+	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.PrepareURI
 	prepReqJSON, err := json.Marshal(prepReq)
 	if err != nil {
 		return acceptedState, err
@@ -64,17 +70,20 @@ func (ht *HTTPtransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.A
 	return acceptedState, nil
 }
 
+// HTTPtransportAcceptRequest is the request sent during accept phase
+// specifically for the HTTPtransport
 type HTTPtransportAcceptRequest struct {
 	B     kshaka.Ballot
 	Key   []byte
 	State []byte
 }
 
+// TransportAccept implements the Transport interface.
 func (ht *HTTPtransport) TransportAccept(b kshaka.Ballot, key []byte, state []byte) (kshaka.AcceptorState, error) {
 	fmt.Println("TransportAccept called....")
 	acceptedState := kshaka.AcceptorState{}
 	acceptReq := HTTPtransportAcceptRequest{B: b, Key: key, State: state}
-	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + "/accept"
+	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.AcceptURI
 	acceptReqJSON, err := json.Marshal(acceptReq)
 	if err != nil {
 		return acceptedState, err

@@ -11,7 +11,9 @@ import (
 	"github.com/komuw/kshaka"
 )
 
-type TransportProposeRequest struct {
+// HTTPtransportProposeRequest is the request sent as a proposal
+// specifically for the HTTPtransport
+type HTTPtransportProposeRequest struct {
 	Key          []byte
 	Val          []byte
 	FunctionName string
@@ -22,6 +24,7 @@ var setFunc = func(val []byte) kshaka.ChangeFunction {
 		return val, nil
 	}
 }
+
 var readFunc kshaka.ChangeFunction = func(current []byte) ([]byte, error) {
 	return current, nil
 }
@@ -30,13 +33,12 @@ var readFunc kshaka.ChangeFunction = func(current []byte) ([]byte, error) {
 
 func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("cool")
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
 			return
 		}
-		proposeRequest := TransportProposeRequest{}
+		proposeRequest := HTTPtransportProposeRequest{}
 		err = json.Unmarshal(body, &proposeRequest)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
@@ -72,7 +74,7 @@ func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 			fmt.Printf("\n err: %+v \n", err)
 			return
 		}
-		prepareRequest := HTTPtransportPrepareRequest{}
+		prepareRequest := kshaka.HTTPtransportPrepareRequest{}
 		err = json.Unmarshal(body, &prepareRequest)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
@@ -110,7 +112,7 @@ func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) 
 			fmt.Printf("\n err: %+v \n", err)
 			return
 		}
-		acceptRequest := HTTPtransportAcceptRequest{}
+		acceptRequest := kshaka.HTTPtransportAcceptRequest{}
 		err = json.Unmarshal(body, &acceptRequest)
 		if err != nil {
 			fmt.Printf("\n err: %+v \n", err)
@@ -157,26 +159,36 @@ func main() {
 		panic(err)
 	}
 
-	// Create a Node with a list of additional nodes.
-	// Number of nodes needed for quorom ought to be >= 3.
-
 	// Note that in this example; nodes are located in the same server/machine.
 	// In practice however, nodes ideally should be in different machines
 	node1 := kshaka.NewNode(1, boltStore1)
 	node2 := kshaka.NewNode(2, boltStore2)
 	node3 := kshaka.NewNode(3, boltStore3)
 
-	transport1 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15001"}
-	transport2 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15002"}
-	transport3 := &HTTPtransport{NodeAddrress: "127.0.0.1", NodePort: "15003"}
+	transport1 := &kshaka.HTTPtransport{
+		NodeAddrress: "127.0.0.1",
+		NodePort:     "15001",
+		ProposeURI:   "/propose",
+		PrepareURI:   "/prepare",
+		AcceptURI:    "/accept"}
+	transport2 := &kshaka.HTTPtransport{
+		NodeAddrress: "127.0.0.1",
+		NodePort:     "15002",
+		ProposeURI:   "/propose",
+		PrepareURI:   "/prepare",
+		AcceptURI:    "/accept"}
+	transport3 := &kshaka.HTTPtransport{
+		NodeAddrress: "127.0.0.1",
+		NodePort:     "15003",
+		ProposeURI:   "/propose",
+		PrepareURI:   "/prepare",
+		AcceptURI:    "/accept"}
 
 	node1.AddTransport(transport1)
 	node2.AddTransport(transport2)
 	node3.AddTransport(transport3)
 
 	kshaka.MingleNodes(node1, node2, node3)
-
-	////
 
 	http.HandleFunc("/propose", proposeHandler(node1))
 	http.HandleFunc("/prepare", prepareHandler(node1))

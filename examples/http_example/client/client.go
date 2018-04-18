@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type TransportProposeRequest struct {
+type HTTPtransportProposeRequest struct {
 	Key          []byte
 	Val          []byte
 	FunctionName string
@@ -20,7 +20,7 @@ func main() {
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	propReq := TransportProposeRequest{Key: key, Val: val, FunctionName: "setFunc"}
+	propReq := HTTPtransportProposeRequest{Key: key, Val: val, FunctionName: "setFunc"}
 	url := "http://" + "127.0.0.1" + ":" + "15003" + "/propose"
 	propReqJSON, err := json.Marshal(propReq)
 	if err != nil {
