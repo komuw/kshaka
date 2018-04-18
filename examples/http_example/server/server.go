@@ -64,6 +64,81 @@ func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+type TransportPrepareRequest struct {
+	B   kshaka.Ballot
+	Key []byte
+}
+
+func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("cool")
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		prepareRequest := TransportPrepareRequest{}
+		err = json.Unmarshal(body, &prepareRequest)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("prepare request body::", string(body))
+		fmt.Printf("\n prepareRequest: %+v %+v  \n", string(prepareRequest.Key), prepareRequest.B)
+
+		aState, err := n.Prepare(prepareRequest.B, prepareRequest.Key)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Printf("\n aState::%v \n", aState)
+
+		// _, err = w.Write(aState)
+		// if err != nil {
+		// 	fmt.Printf("\n err: %+v \n", err)
+		// 	return
+		// }
+	}
+}
+
+type TransportAcceptRequest struct {
+	B     kshaka.Ballot
+	Key   []byte
+	State []byte
+}
+
+func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("cool")
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		acceptRequest := TransportAcceptRequest{}
+		err = json.Unmarshal(body, &acceptRequest)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Println("accept request body::", string(body))
+		fmt.Printf("\n acceptRequest: %+v %+v  \n", string(acceptRequest.Key), acceptRequest.B)
+
+		aState, err := n.Accept(acceptRequest.B, acceptRequest.Key, acceptRequest.State)
+		if err != nil {
+			fmt.Printf("\n err: %+v \n", err)
+			return
+		}
+		fmt.Printf("\n aState::%v \n", aState)
+
+		// _, err = w.Write(aState)
+		// if err != nil {
+		// 	fmt.Printf("\n err: %+v \n", err)
+		// 	return
+		// }
+	}
+}
+
 func main() {
 	// Create a store that will be used.
 	// Ideally it should be a disk persisted store.
@@ -103,6 +178,9 @@ func main() {
 	////
 
 	http.HandleFunc("/propose", proposeHandler(node1))
+	http.HandleFunc("/prepare", prepareHandler(node1))
+	http.HandleFunc("/accept", acceptHandler(node1))
+
 	go func() {
 		log.Fatal(http.ListenAndServe(":15001", nil))
 	}()

@@ -12,7 +12,7 @@ func TestNode_incBallot(t *testing.T) {
 		name string
 		n    *Node
 	}{
-		{name: "increment ballot", n: NewNode(1, store)},
+		{name: "increment Ballot", n: NewNode(1, store)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -21,8 +21,8 @@ func TestNode_incBallot(t *testing.T) {
 			n.incBallot()
 			n.incBallot()
 
-			if n.ballot.Counter != 3 {
-				t.Errorf("\n p.incBallot() *3 \ngot = %#+v, \nwanted = %#+v", n.ballot.Counter, 3)
+			if n.Ballot.Counter != 3 {
+				t.Errorf("\n p.incBallot() *3 \ngot = %#+v, \nwanted = %#+v", n.Ballot.Counter, 3)
 			}
 		})
 	}

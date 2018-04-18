@@ -18,8 +18,8 @@ type Transport interface {
 	// and also the ChangeFunction that will be applied to the value(contents) of that key.
 	TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error)
 
-	TransportPrepare(b ballot, key []byte) (AcceptorState, error)
-	TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error)
+	TransportPrepare(b Ballot, key []byte) (AcceptorState, error)
+	TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error)
 }
 
 // InmemTransport Implements the Transport interface, to allow kshaka/CASPaxos to be
@@ -33,11 +33,11 @@ type InmemTransport struct {
 func (it *InmemTransport) TransportPropose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	return it.Node.Propose(key, changeFunc)
 }
-func (it *InmemTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
-	return it.Node.prepare(b, key)
+func (it *InmemTransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
+	return it.Node.Prepare(b, key)
 }
-func (it *InmemTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
-	return it.Node.accept(b, key, state)
+func (it *InmemTransport) TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error) {
+	return it.Node.Accept(b, key, state)
 }
 
 /*
@@ -77,10 +77,10 @@ func (ht *HttpTransport) TransportPropose(key []byte, changeFunc ChangeFunction)
 	return nil, nil
 }
 
-func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, error) {
+func (ht *HttpTransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
 	fmt.Println("TransportPrepare called....")
 	type prepareRequest struct {
-		B   ballot
+		B   Ballot
 		Key []byte
 	}
 	prepReq := prepareRequest{B: b, Key: key}
@@ -112,10 +112,10 @@ func (ht *HttpTransport) TransportPrepare(b ballot, key []byte) (AcceptorState, 
 	return AcceptorState{}, nil
 }
 
-func (ht *HttpTransport) TransportAccept(b ballot, key []byte, state []byte) (AcceptorState, error) {
+func (ht *HttpTransport) TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error) {
 	fmt.Println("TransportAccept called....")
 	type acceptRequest struct {
-		B     ballot
+		B     Ballot
 		Key   []byte
 		State []byte
 	}

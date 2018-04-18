@@ -78,15 +78,15 @@ func main() {
 ### 1. Intro:           
 - Clients initiate a request by communicating with a proposer; clients may be stateless, the system may have arbitrary numbers of clients.               
 - Proposers perform the initialization by communicating with acceptors. 
-Proposers keep minimal state needed to generate unique increasing update IDs (ballot numbers), the system may have arbitrary numbers of proposers.        
+Proposers keep minimal state needed to generate unique increasing update IDs (Ballot numbers), the system may have arbitrary numbers of proposers.        
 - Acceptors store the accepted value; the system should have 2F+1 acceptors to tolerate F failures.
 
 
-- It’s convenient to use tuples as ballot numbers. 
+- It’s convenient to use tuples as Ballot numbers. 
 To generate it a proposer combines its numerical ID with a local increasing counter: (counter, ID). 
-To compare ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
+To compare Ballot tuples, we should compare the first component of the tuples and use ID only as a tiebreaker.
 - When a proposer receives a conflicting message from an acceptor, it should fast-forward its counter to avoid a conflict in the future. 
-If an acceptor returns a conflict if it already saw a greater ballot number during the prepare message, does the Proposer retry with a higher ballot number or does it just stop?
+If an acceptor returns a conflict if it already saw a greater Ballot number during the prepare message, does the Proposer retry with a higher Ballot number or does it just stop?
 Ans: It doesn't matter from the protocol's point of view and different implementations may implement it in different ways. - https://twitter.com/rystsov/status/971797758284677120       
 Proposers in Kshaka will, for the time been, will not retry after conflicts.
 
@@ -97,16 +97,16 @@ Out of the concurrent requests only one can succeed;  we should acquire a lock::
 
 A. Prepare phase
 - A client submits the f change function to a proposer.
-- The proposer generates a ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.
-- Acceptor returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
-Persists the ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet) or with a tuple of an accepted value and its ballot number.
+- The proposer generates a Ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.
+- Acceptor returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
+Persists the Ballot number as a promise and returns a confirmation either with an empty value (if it hasn’t accepted any value yet) or with a tuple of an accepted value and its Ballot number.
 - Proposer waits for the F + 1 confirmations.               
 
 B. Accept phase
-- If they(prepare replies from acceptors) all contain the empty value, then the proposer defines the current state as ∅ otherwise it picks the value of the tuple with the highest ballot number.             
-- Proposer applies the f function to the current state and sends the result, new state, along with the generated ballot number B (an ”accept” message) to the acceptors.
-- Accept returns a conflict if it already saw a greater ballot number, it also submits the ballot and accepted value it has.
-Erases the promise, marks the received tuple (ballot number, value) as the accepted value and returns a confirmation        
+- If they(prepare replies from acceptors) all contain the empty value, then the proposer defines the current state as ∅ otherwise it picks the value of the tuple with the highest Ballot number.             
+- Proposer applies the f function to the current state and sends the result, new state, along with the generated Ballot number B (an ”accept” message) to the acceptors.
+- Accept returns a conflict if it already saw a greater Ballot number, it also submits the Ballot and accepted value it has.
+Erases the promise, marks the received tuple (Ballot number, value) as the accepted value and returns a confirmation        
 
 C. End
 - Proposer waits for the F + 1 confirmations.
