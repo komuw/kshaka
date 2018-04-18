@@ -64,11 +64,6 @@ func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-type TransportPrepareRequest struct {
-	B   kshaka.Ballot
-	Key []byte
-}
-
 func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("cool")
@@ -99,12 +94,6 @@ func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request)
 		// 	return
 		// }
 	}
-}
-
-type TransportAcceptRequest struct {
-	B     kshaka.Ballot
-	Key   []byte
-	State []byte
 }
 
 func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
@@ -165,9 +154,9 @@ func main() {
 	node2 := kshaka.NewNode(2, boltStore2)
 	node3 := kshaka.NewNode(3, boltStore3)
 
-	transport1 := &kshaka.HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15001"}
-	transport2 := &kshaka.HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15002"}
-	transport3 := &kshaka.HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15003"}
+	transport1 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15001"}
+	transport2 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15002"}
+	transport3 := &HttpTransport{NodeAddrress: "127.0.0.1", NodePort: "15003"}
 
 	node1.AddTransport(transport1)
 	node2.AddTransport(transport2)
