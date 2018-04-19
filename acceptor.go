@@ -22,6 +22,7 @@ func promisedBallotKey(key []byte) []byte {
 	return []byte(fmt.Sprintf("__PROMISED__Ballot__KEY__c8c07b0c-3598-11e8-98b8-97a4ad1feb35__d1a0ca9c-3598-11e8-9c5f-c3c66e6b4439.%s", key))
 }
 
+// AcceptorState is the state that is maintained by an acceptor/node
 type AcceptorState struct {
 	PromisedBallot Ballot
 	AcceptedBallot Ballot
