@@ -68,7 +68,7 @@ func prepareHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Reques
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		prepareRequest := httpTransport.HTTPtransportPrepareRequest{}
+		prepareRequest := httpTransport.PrepareRequest{}
 		err = json.Unmarshal(body, &prepareRequest)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

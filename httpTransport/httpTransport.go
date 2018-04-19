@@ -25,9 +25,9 @@ type HTTPtransport struct {
 	AcceptURI    string
 }
 
-// HTTPtransportPrepareRequest is the request sent during prepare phase
+// PrepareRequest is the request sent during prepare phase
 // specifically for the HTTPtransport
-type HTTPtransportPrepareRequest struct {
+type PrepareRequest struct {
 	B   protocol.Ballot
 	Key []byte
 }
@@ -36,7 +36,7 @@ type HTTPtransportPrepareRequest struct {
 func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protocol.AcceptorState, error) {
 	acceptedState := protocol.AcceptorState{}
 
-	prepReq := HTTPtransportPrepareRequest{B: b, Key: key}
+	prepReq := PrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.PrepareURI
 	prepReqJSON, err := json.Marshal(prepReq)
 	if err != nil {
