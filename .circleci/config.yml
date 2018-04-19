@@ -39,9 +39,9 @@ jobs:
                 go get -u github.com/hashicorp/raft-boltdb && \
                 go get -u github.com/golang/dep/cmd/dep && \
                 go get -u github.com/goreleaser/goreleaser && \
-                dep ensure -v
-
-        # - run: source /etc/profile && go build --race -o kshaka main.go
+                dep ensure -v && \
+                go get -u github.com/alecthomas/gometalinter && \
+                gometalinter --install
 
         - run:
              name: go vet
@@ -54,6 +54,33 @@ jobs:
         - run:
             name: run benchmarks
             command: source /etc/profile && go test -timeout 1m -race -run=XXXX -bench=. ./...
+        
+        - run:
+            name: run gometalinter
+            command: source /etc/profile && gometalinter --disable-all \
+                                                            --enable=vet \
+                                                            --enable=vetshadow \
+                                                            --enable=structcheck \
+                                                            --enable=maligned \
+                                                            --enable=nakedret \
+                                                            --enable=deadcode \
+                                                            --enable=gocyclo \
+                                                            --enable=ineffassign \
+                                                            --enable=dupl \
+                                                            --enable=golint \
+                                                            --enable=gotype \
+                                                            --enable=goimports \
+                                                            --enable=errcheck \
+                                                            --enable=varcheck \
+                                                            --enable=interfacer \
+                                                            --enable=goconst \
+                                                            --enable=gosimple \
+                                                            --enable=staticcheck \
+                                                            --enable=unparam \
+                                                            --enable=unused \
+                                                            --enable=gas \
+                                                            --enable=safesql \
+                                                            ./...
 
         - run:
             name: codecov
@@ -61,6 +88,9 @@ jobs:
                 source /etc/profile && \
                 go test -timeout 30s -v -race -cover -coverprofile=coverage.txt ./... && \
                 bash <(curl -s https://codecov.io/bash)
+
+        # - run: source /etc/profile && go build --race -o kshaka main.go
+
 
 
 #   deploy:
