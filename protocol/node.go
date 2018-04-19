@@ -12,6 +12,7 @@ Example usage:
 	package main
 
 	import (
+	"github.com/komuw/kshaka"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
@@ -74,7 +75,7 @@ Example usage:
 
 TODO: add system design here.
 */
-package kshaka
+package protocol
 
 import (
 	"bytes"
@@ -82,6 +83,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/komuw/kshaka/store"
+	"github.com/komuw/kshaka/transport"
 	"github.com/pkg/errors"
 )
 
@@ -101,11 +104,11 @@ type Node struct {
 
 	// acceptorStore is a StableStore implementation for durable state
 	// It provides stable storage for many fields in raftState
-	acceptorStore StableStore
+	acceptorStore store.StableStore
 
 	// TODO: maybe add a transport interface
 	// so that lib users can roll their own
-	Trans Transport
+	Trans transport.Transport
 }
 
 // NewNode creates a new node.

@@ -1,4 +1,4 @@
-package kshaka
+package transport
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/komuw/kshaka/protocol"
 
 	"github.com/pkg/errors"
 )
@@ -24,7 +26,7 @@ type HTTPtransport struct {
 // HTTPtransportPrepareRequest is the request sent during prepare phase
 // specifically for the HTTPtransport
 type HTTPtransportPrepareRequest struct {
-	B   Ballot
+	B   protocol.Ballot
 	Key []byte
 }
 

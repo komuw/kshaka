@@ -1,4 +1,4 @@
-package kshaka
+package transport
 
 // Transport provides an interface for network transports
 // to allow kshaka/CASPaxos to communicate with other nodes.

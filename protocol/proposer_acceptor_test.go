@@ -1,4 +1,4 @@
-package kshaka
+package protocol
 
 import (
 	"reflect"

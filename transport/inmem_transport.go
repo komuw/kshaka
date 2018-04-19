@@ -1,4 +1,4 @@
-package kshaka
+package transport
 
 // InmemTransport Implements the Transport interface, to allow kshaka/CASPaxos to be
 // tested in-memory without going over a network.
