@@ -207,7 +207,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 	for i := 0; i < cap(prepareResultChan) && confirmationsNeeded > 0; i++ {
 		res := <-prepareResultChan
 		if res.err != nil {
-			// conflict occured
+			// conflict occurred
 			numberConflicts++
 			if res.acceptedState.AcceptedBallot.Counter > highBallotConflict.Counter {
 				highBallotConflict = res.acceptedState.AcceptedBallot
@@ -215,7 +215,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 				highBallotConflict = res.acceptedState.PromisedBallot
 			}
 		} else {
-			// confirmation occured.
+			// confirmation occurred.
 			numberConfirmations++
 			if res.acceptedState.AcceptedBallot.Counter >= highBallotConfirm.Counter {
 				highBallotConfirm = res.acceptedState.AcceptedBallot
@@ -285,7 +285,7 @@ func (n *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	for i := 0; i < cap(acceptResultChan) && confirmationsNeeded > 0; i++ {
 		res := <-acceptResultChan
 		if res.err != nil {
-			// conflict occured
+			// conflict occurred
 			numberConflicts++
 			if res.acceptedState.AcceptedBallot.Counter > n.Ballot.Counter {
 				highBallotConflict = res.acceptedState.AcceptedBallot
@@ -293,7 +293,7 @@ func (n *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 				highBallotConflict = res.acceptedState.PromisedBallot
 			}
 		} else {
-			// confirmation occured.
+			// confirmation occurred.
 			numberConfirmations++
 			confirmationsNeeded--
 		}
