@@ -1,6 +1,6 @@
 /*
 Package protocol is a pure Go implementation of the CASPaxos consensus protocol.
-It's name is derived from the Kenyan hip hop group, Kalamashakn.
+It's name is derived from the Kenyan hip hop group, Kalamashaka.
 
 "CASPaxos is a replicated state machine (RSM) protocol. Unlike Raft and Multi-Paxos,
 it doesn't use leader election and log replication, thus avoiding associated complexity.

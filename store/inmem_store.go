@@ -1,3 +1,11 @@
+/*
+Package store provides sample implementations of kshaka's StableStore interface
+That interface is the same as the one defined in hashicorp/raft
+This means you can use any interface that satisfies that interface as the storage
+mechanism for kshaka/CASPaxos,
+eg github.com/hashicorp/raft-mdb and
+   github.com/hashicorp/raft-boltdb
+*/
 package store
 
 import (

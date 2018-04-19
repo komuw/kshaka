@@ -1,3 +1,6 @@
+/*
+Package transport provides sample implementations of kshaka's transport interface
+*/
 package transport
 
 import (
