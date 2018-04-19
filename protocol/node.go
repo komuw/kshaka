@@ -189,7 +189,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 		return nil, fmt.Errorf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors)
 	}
 	if bytes.Equal(key, acceptedBallotKey(key)) {
-		return nil, fmt.Errorf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key))
+		return nil, fmt.Errorf("the key:%v is reserved for storing kshaka internal state. chose another key", acceptedBallotKey(key))
 	}
 
 	n.incBallot()
@@ -262,7 +262,7 @@ func (n *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 		return nil, fmt.Errorf("number of acceptors:%v is less than required minimum of:%v", noAcceptors, minimumNoAcceptors)
 	}
 	if bytes.Equal(key, acceptedBallotKey(key)) {
-		return nil, fmt.Errorf("the key:%v is reserved for storing kshaka internal state. chose another key.", acceptedBallotKey(key))
+		return nil, fmt.Errorf("the key:%v is reserved for storing kshaka internal state. chose another key", acceptedBallotKey(key))
 	}
 
 	newState, err := changeFunc(currentState)

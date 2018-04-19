@@ -39,7 +39,7 @@ func main() {
 		fmt.Printf("\n err: %+v \n", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("\n err: %+v \n", err)
