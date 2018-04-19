@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // HTTPtransport provides a http based transport that can be
@@ -51,7 +49,7 @@ func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return acceptedState, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+		return acceptedState, fmt.Errorf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -95,7 +93,7 @@ func (ht *HTTPtransport) TransportAccept(b Ballot, key []byte, state []byte) (Ac
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return acceptedState, errors.New(fmt.Sprintf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK))
+		return acceptedState, fmt.Errorf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
