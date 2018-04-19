@@ -100,8 +100,6 @@ type Node struct {
 	// It provides stable storage for many fields in raftState
 	acceptorStore StableStore
 
-	// TODO: maybe add a transport interface
-	// so that lib users can roll their own
 	Trans Transport
 }
 
