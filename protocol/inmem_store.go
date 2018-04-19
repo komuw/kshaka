@@ -6,7 +6,7 @@ mechanism for kshaka/CASPaxos,
 eg github.com/hashicorp/raft-mdb and
    github.com/hashicorp/raft-boltdb
 */
-package store
+package protocol
 
 import (
 	"errors"

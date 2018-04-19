@@ -1,7 +1,8 @@
 /*
-Package transport provides sample implementations of kshaka's transport interface
+Package httpTransport provides a sample implementation of kshaka's transport interface
+
 */
-package transport
+package httpTransport
 
 import (
 	"bytes"

@@ -5,4 +5,6 @@ type ProposerAcceptor interface {
 	proposer
 	acceptor
 	Propose(key []byte, changeFunc ChangeFunction) ([]byte, error)
+	AddTransport(t Transport)
+	AddMetadata(metadata map[string]string)
 }

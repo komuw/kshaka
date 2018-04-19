@@ -14,6 +14,8 @@ Example usage:
 	import (
 	"github.com/sanity-io/litter"
 	"golang_org/x/net/lif"
+	"github.com/sanity-io/litter"
+	"golang_org/x/net/lif"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
@@ -75,6 +77,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	"github.com/sanity-io/litter"
 )
 
 const stableStoreNotFoundErr = "not found"
@@ -190,6 +193,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range n.nodes {
 		go func(a *Node) {
+			litter.Dump(a.Trans)
 			acceptedState, err := a.Trans.TransportPrepare(n.Ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)

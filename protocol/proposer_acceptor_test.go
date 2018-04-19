@@ -3,16 +3,14 @@ package protocol
 import (
 	"reflect"
 	"testing"
-
-	"github.com/komuw/kshaka/store"
 )
 
 func TestPropose(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
-	acceptorStore := &store.InmemStore{KV: kv}
+	acceptorStore := &InmemStore{KV: kv}
 
 	kv2 := map[string][]byte{"Bob": []byte("Marley")}
-	acceptorStore2 := &store.InmemStore{KV: kv2}
+	acceptorStore2 := &InmemStore{KV: kv2}
 
 	var readFunc ChangeFunction = func(current []byte) ([]byte, error) {
 		return current, nil
@@ -85,6 +83,9 @@ func TestPropose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// transport := &InmemTransport{Node: tt.pa}
+			// tt.pa.AddTransport(transport)
+
 			newstate, err := tt.pa.Propose(tt.args.key, tt.args.changeFunc)
 			t.Logf("\nnewstate:%#+v, \nerr:%#+v", newstate, err)
 

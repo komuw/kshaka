@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/raft-boltdb"
+	"github.com/komuw/kshaka/httpTransport"
 	"github.com/komuw/kshaka/protocol"
-	"github.com/komuw/kshaka/transport"
 )
 
 // HTTPtransportProposeRequest is the request sent as a proposal
@@ -68,7 +68,7 @@ func prepareHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Reques
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		prepareRequest := transport.HTTPtransportPrepareRequest{}
+		prepareRequest := httpTransport.HTTPtransportPrepareRequest{}
 		err = json.Unmarshal(body, &prepareRequest)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,7 +101,7 @@ func acceptHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Request
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		acceptRequest := transport.HTTPtransportAcceptRequest{}
+		acceptRequest := httpTransport.HTTPtransportAcceptRequest{}
 		err = json.Unmarshal(body, &acceptRequest)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -150,19 +150,19 @@ func main() {
 	node2 := protocol.NewNode(2, boltStore2)
 	node3 := protocol.NewNode(3, boltStore3)
 
-	transport1 := &transport.HTTPtransport{
+	transport1 := &httpTransport.HTTPtransport{
 		NodeAddrress: "127.0.0.1",
 		NodePort:     "15001",
 		ProposeURI:   "/propose",
 		PrepareURI:   "/prepare",
 		AcceptURI:    "/accept"}
-	transport2 := &transport.HTTPtransport{
+	transport2 := &httpTransport.HTTPtransport{
 		NodeAddrress: "127.0.0.1",
 		NodePort:     "15002",
 		ProposeURI:   "/propose",
 		PrepareURI:   "/prepare",
 		AcceptURI:    "/accept"}
-	transport3 := &transport.HTTPtransport{
+	transport3 := &httpTransport.HTTPtransport{
 		NodeAddrress: "127.0.0.1",
 		NodePort:     "15003",
 		ProposeURI:   "/propose",

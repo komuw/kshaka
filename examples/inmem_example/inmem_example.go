@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/raft-boltdb"
 	"github.com/komuw/kshaka/protocol"
-	"github.com/komuw/kshaka/transport"
 )
 
 func main() {
@@ -31,9 +30,9 @@ func main() {
 	node2 := protocol.NewNode(2, boltStore)
 	node3 := protocol.NewNode(3, boltStore)
 
-	transport1 := &transport.InmemTransport{Node: node1}
-	transport2 := &transport.InmemTransport{Node: node2}
-	transport3 := &transport.InmemTransport{Node: node3}
+	transport1 := &protocol.InmemTransport{Node: node1}
+	transport2 := &protocol.InmemTransport{Node: node2}
+	transport3 := &protocol.InmemTransport{Node: node3}
 	node1.AddTransport(transport1)
 	node2.AddTransport(transport2)
 	node3.AddTransport(transport3)
