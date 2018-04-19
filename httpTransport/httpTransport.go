@@ -1,6 +1,6 @@
 /*
 Package httpTransport provides a sample implementation of kshaka's transport interface
-
+This implementation uses net/http to communicate between different kshaka Nodes.
 */
 package httpTransport
 
