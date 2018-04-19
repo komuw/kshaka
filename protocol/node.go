@@ -12,6 +12,8 @@ Example usage:
 	package main
 
 	import (
+	"github.com/sanity-io/litter"
+	"golang_org/x/net/lif"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
@@ -188,7 +190,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range n.nodes {
 		go func(a *Node) {
-			acceptedState, err := n.Trans.TransportPrepare(n.Ballot, key)
+			acceptedState, err := a.Trans.TransportPrepare(n.Ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
 	}
@@ -266,7 +268,7 @@ func (n *Node) sendAccept(key []byte, currentState []byte, changeFunc ChangeFunc
 	acceptResultChan := make(chan acceptResult, noAcceptors)
 	for _, a := range n.nodes {
 		go func(a *Node) {
-			acceptedState, err := n.Trans.TransportAccept(n.Ballot, key, newState)
+			acceptedState, err := a.Trans.TransportAccept(n.Ballot, key, newState)
 			acceptResultChan <- acceptResult{acceptedState, err}
 		}(a)
 	}
