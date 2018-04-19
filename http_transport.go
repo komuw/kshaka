@@ -47,7 +47,7 @@ func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, 
 	if err != nil {
 		return acceptedState, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 	if resp.StatusCode != http.StatusOK {
 		return acceptedState, fmt.Errorf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK)
 	}
@@ -91,7 +91,7 @@ func (ht *HTTPtransport) TransportAccept(b Ballot, key []byte, state []byte) (Ac
 	if err != nil {
 		return acceptedState, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint: errcheck
 	if resp.StatusCode != http.StatusOK {
 		return acceptedState, fmt.Errorf("url:%v returned http status:%v instead of status:%v", url, resp.StatusCode, http.StatusOK)
 	}
