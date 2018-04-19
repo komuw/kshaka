@@ -2,6 +2,7 @@
 [![CircleCI](https://circleci.com/gh/komuw/kshaka.svg?style=svg)](https://circleci.com/gh/komuw/kshaka)
 [![codecov](https://codecov.io/gh/komuw/kshaka/branch/master/graph/badge.svg)](https://codecov.io/gh/komuw/kshaka)
 [![GoDoc](https://godoc.org/github.com/komuw/kshaka?status.svg)](https://godoc.org/github.com/komuw/kshaka)
+[![Go Report Card](https://goreportcard.com/badge/github.com/komuw/kshaka)](https://goreportcard.com/report/github.com/komuw/kshaka)
 
 
 Kshaka is a Go implementation of the [CASPaxos](https://github.com/rystsov/caspaxos/blob/master/latex/caspaxos.pdf) consensus protocol.                              
