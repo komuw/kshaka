@@ -85,6 +85,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const stableStoreNotFoundErr = "not found"
+
 // Node satisfies the ProposerAcceptor interface.
 // A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
 type Node struct {
@@ -316,7 +318,7 @@ func (n *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	defer n.Unlock()
 
 	state, err := n.acceptorStore.Get(key)
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// see: issues/10
 		// TODO: do better
 		state, err = nil, nil
@@ -326,7 +328,7 @@ func (n *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	}
 
 	acceptedBallotBytes, err := n.acceptorStore.Get(acceptedBallotKey(key))
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// unfortunate way of handling errors
 		// TODO: do better
 		acceptedBallotBytes, err = nil, nil
@@ -350,7 +352,7 @@ func (n *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	}
 
 	promisedBallotBytes, err := n.acceptorStore.Get(promisedBallotKey(key))
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// unfortunate way of handling errors
 		// TODO: do better
 		promisedBallotBytes, err = nil, nil
@@ -405,7 +407,7 @@ func (n *Node) Accept(b Ballot, key []byte, newState []byte) (AcceptorState, err
 	defer n.Unlock()
 
 	state, err := n.acceptorStore.Get(key)
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// unfortunate way of handling errors
 		// TODO: do better
 		state, err = nil, nil
@@ -415,7 +417,7 @@ func (n *Node) Accept(b Ballot, key []byte, newState []byte) (AcceptorState, err
 	}
 
 	acceptedBallotBytes, err := n.acceptorStore.Get(acceptedBallotKey(key))
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// unfortunate way of handling errors
 		// TODO: do better
 		acceptedBallotBytes, err = nil, nil
@@ -440,7 +442,7 @@ func (n *Node) Accept(b Ballot, key []byte, newState []byte) (AcceptorState, err
 	}
 
 	promisedBallotBytes, err := n.acceptorStore.Get(promisedBallotKey(key))
-	if err != nil && err.Error() == "not found" {
+	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// unfortunate way of handling errors
 		// TODO: do better
 		promisedBallotBytes, err = nil, nil
