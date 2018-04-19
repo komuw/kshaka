@@ -1,5 +1,5 @@
 /*
-Package kshaka is a pure Go implementation of the CASPaxos consensus protocol.
+Package protocol is a pure Go implementation of the CASPaxos consensus protocol.
 It's name is derived from the Kenyan hip hop group, Kalamashakn.
 
 "CASPaxos is a replicated state machine (RSM) protocol. Unlike Raft and Multi-Paxos,
@@ -12,6 +12,8 @@ Example usage:
 	package main
 
 	import (
+	"github.com/komuw/kshaka/protocol"
+	"github.com/gogo/protobuf/proto"
 	"github.com/komuw/kshaka"
 		"fmt"
 
@@ -83,8 +85,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/komuw/kshaka/store"
-	"github.com/komuw/kshaka/transport"
 	"github.com/pkg/errors"
 )
 
@@ -106,11 +106,11 @@ type Node struct {
 
 	// acceptorStore is a StableStore implementation for durable state
 	// It provides stable storage for many fields in raftState
-	acceptorStore store.StableStore
+	acceptorStore StableStore
 
 	// TODO: maybe add a transport interface
 	// so that lib users can roll their own
-	Trans transport.Transport
+	Trans Transport
 }
 
 // NewNode creates a new node.

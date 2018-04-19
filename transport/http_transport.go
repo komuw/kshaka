@@ -29,8 +29,8 @@ type HTTPtransportPrepareRequest struct {
 }
 
 // TransportPrepare implements the Transport interface.
-func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
-	acceptedState := AcceptorState{}
+func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protocol.AcceptorState, error) {
+	acceptedState := protocol.AcceptorState{}
 
 	prepReq := HTTPtransportPrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.PrepareURI
@@ -69,14 +69,14 @@ func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, 
 // HTTPtransportAcceptRequest is the request sent during accept phase
 // specifically for the HTTPtransport
 type HTTPtransportAcceptRequest struct {
-	B     Ballot
+	B     protocol.Ballot
 	Key   []byte
 	State []byte
 }
 
 // TransportAccept implements the Transport interface.
-func (ht *HTTPtransport) TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error) {
-	acceptedState := AcceptorState{}
+func (ht *HTTPtransport) TransportAccept(b protocol.Ballot, key []byte, state []byte) (protocol.AcceptorState, error) {
+	acceptedState := protocol.AcceptorState{}
 	acceptReq := HTTPtransportAcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.AcceptURI
 	acceptReqJSON, err := json.Marshal(acceptReq)
