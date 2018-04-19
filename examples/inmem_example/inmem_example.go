@@ -9,10 +9,8 @@ import (
 )
 
 func main() {
-	// Create a store that will be used.
-	// Ideally it should be a disk persisted store.
-	// Any that implements hashicorp/raft StableStore
-	// interface will suffice
+	// The store should, ideally be disk persisted.
+	// Any that implements hashicorp/raft StableStore interface will suffice
 	boltStore, err := raftboltdb.NewBoltStore("/tmp/bolt.db")
 	if err != nil {
 		panic(err)
@@ -27,12 +25,7 @@ func main() {
 		}
 	}
 
-	// Create a Node with a list of additional nodes.
-	// Number of nodes needed for quorom ought to be >= 3.
-
-	// Note that in this example; nodes are using the same store
-	// and are located in the same server/machine.
-	// In practice however, nodes ideally should be
+	// Note that, in practice, nodes ideally should be
 	// in different machines each with its own store.
 	node1 := protocol.NewNode(1, boltStore)
 	node2 := protocol.NewNode(2, boltStore)
@@ -51,8 +44,6 @@ func main() {
 	val := []byte("Masta-Ace")
 
 	// make a proposition; consensus via CASPaxos will
-	// happen and you will get the new state and any error back.
-	// NB: you can call Propose on any of the nodes
 	newstate, err := node2.Propose(key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
