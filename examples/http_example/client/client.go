@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// HTTPtransportProposeRequest is the request sent as a proposal
+// specifically for the HTTPtransport
 type HTTPtransportProposeRequest struct {
 	Key          []byte
 	Val          []byte
