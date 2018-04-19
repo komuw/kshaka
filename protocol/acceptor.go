@@ -34,6 +34,6 @@ type AcceptorState struct {
 // How to achieve this is an implementation detail.
 // eg in Gryadka it doesn't matter because the operations are implemented as Redis's stored procedures and Redis is single threaded. - Denis Rystsov
 type acceptor interface {
-	prepare(b Ballot, key []byte) (AcceptorState, error)
-	accept(b Ballot, key []byte, state []byte) (AcceptorState, error)
+	Prepare(b Ballot, key []byte) (AcceptorState, error)
+	Accept(b Ballot, key []byte, state []byte) (AcceptorState, error)
 }

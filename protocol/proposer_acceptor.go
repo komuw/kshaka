@@ -4,4 +4,5 @@ package protocol
 type ProposerAcceptor interface {
 	proposer
 	acceptor
+	Propose(key []byte, changeFunc ChangeFunction) ([]byte, error)
 }
