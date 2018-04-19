@@ -120,6 +120,21 @@ func MingleNodes(nodes ...*Node) {
 	}
 }
 
+// AddTransport adds transport to a node.
+func (n *Node) AddTransport(t Transport) {
+	n.Trans = t
+}
+
+// AddMetadata adds metadata to a node. eg name=myNode, env=production
+func (n *Node) AddMetadata(metadata map[string]string) {
+	n.Metadata = metadata
+}
+
+// monotonically increase the Ballot
+func (n *Node) incBallot() {
+	n.Ballot.Counter++
+}
+
 // Propose is the method that clients call when they want to submit
 // the f change function to a proposer.
 // It takes the key whose value you want to apply the ChangeFunction to
@@ -142,21 +157,6 @@ func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	fmt.Printf("newState: %+v %+v\n", newState, string(newState))
 
 	return newState, nil
-}
-
-// AddTransport adds transport to a node.
-func (n *Node) AddTransport(t Transport) {
-	n.Trans = t
-}
-
-// AddMetadata adds metadata to a node. eg name=myNode, env=production
-func (n *Node) AddMetadata(metadata map[string]string) {
-	n.Metadata = metadata
-}
-
-// monotonically increase the Ballot
-func (n *Node) incBallot() {
-	n.Ballot.Counter++
 }
 
 // The proposer generates a Ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.
