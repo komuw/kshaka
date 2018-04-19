@@ -59,11 +59,7 @@ func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protoc
 	}
 
 	err = json.Unmarshal(body, &acceptedState)
-	if err != nil {
-		return acceptedState, err
-	}
-
-	return acceptedState, nil
+	return acceptedState, err
 }
 
 // HTTPtransportAcceptRequest is the request sent during accept phase
@@ -103,9 +99,5 @@ func (ht *HTTPtransport) TransportAccept(b protocol.Ballot, key []byte, state []
 	}
 
 	err = json.Unmarshal(body, &acceptedState)
-	if err != nil {
-		return acceptedState, err
-	}
-
-	return acceptedState, nil
+	return acceptedState, err
 }
