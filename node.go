@@ -1,5 +1,5 @@
 /*
-package kshaka is a pure Go implementation of the CASPaxos consensus protocol.
+Package kshaka is a pure Go implementation of the CASPaxos consensus protocol.
 It's name is derived from the Kenyan hip hop group, Kalamashaka.
 
 "CASPaxos is a replicated state machine (RSM) kshaka. Unlike Raft and Multi-Paxos,
