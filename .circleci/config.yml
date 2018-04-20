@@ -57,7 +57,9 @@ jobs:
         
         - run:
             name: run gometalinter
-            command: source /etc/profile && gometalinter --disable-all \
+            command: source /etc/profile && gometalinter --vendor \
+                                                            --aggregate \
+                                                            --disable-all \
                                                             --enable=vet \
                                                             --enable=vetshadow \
                                                             --enable=structcheck \
