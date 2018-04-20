@@ -57,9 +57,9 @@ jobs:
         
         - run:
             name: run gometalinter
-            command: source /etc/profile && gometalinter --vendor \
+            command: source /etc/profile && gometalinter --disable-all \
+                                                            --vendor \
                                                             --aggregate \
-                                                            --disable-all \
                                                             --enable=vet \
                                                             --enable=vetshadow \
                                                             --enable=structcheck \
@@ -67,6 +67,7 @@ jobs:
                                                             --enable=nakedret \
                                                             --enable=deadcode \
                                                             --enable=gocyclo \
+                                                            --cyclo-over=21 \
                                                             --enable=ineffassign \
                                                             --enable=golint \
                                                             --enable=gotype \
