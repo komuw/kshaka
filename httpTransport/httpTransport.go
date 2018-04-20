@@ -66,9 +66,9 @@ func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protoc
 	return acceptedState, err
 }
 
-// HTTPtransportAcceptRequest is the request sent during accept phase
+// AcceptRequest is the request sent during accept phase
 // specifically for the HTTPtransport
-type HTTPtransportAcceptRequest struct {
+type AcceptRequest struct {
 	B     protocol.Ballot
 	Key   []byte
 	State []byte
@@ -77,7 +77,7 @@ type HTTPtransportAcceptRequest struct {
 // TransportAccept implements the Transport interface.
 func (ht *HTTPtransport) TransportAccept(b protocol.Ballot, key []byte, state []byte) (protocol.AcceptorState, error) {
 	acceptedState := protocol.AcceptorState{}
-	acceptReq := HTTPtransportAcceptRequest{B: b, Key: key, State: state}
+	acceptReq := AcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.AcceptURI
 	acceptReqJSON, err := json.Marshal(acceptReq)
 	if err != nil {

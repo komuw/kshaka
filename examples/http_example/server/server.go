@@ -101,7 +101,7 @@ func acceptHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Request
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		acceptRequest := httpTransport.HTTPtransportAcceptRequest{}
+		acceptRequest := httpTransport.AcceptRequest{}
 		err = json.Unmarshal(body, &acceptRequest)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
