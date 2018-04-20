@@ -63,7 +63,7 @@ func main() {
 	key := []byte("name")
 	val := []byte("Masta-Ace")
 
-	// make a proposition; consensus via CASPaxos will
+	// make a proposition; consensus via CASPaxos will happen
 	newstate, err := node2.Propose(key, setFunc(val))
 	if err != nil {
 		fmt.Printf("err: %v", err)
