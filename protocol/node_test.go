@@ -6,7 +6,7 @@ import (
 
 func TestNode_incBallot(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
-	store := &InmemStore{KV: kv}
+	store := &InmemStore{kv: kv}
 
 	tests := []struct {
 		name string
@@ -30,7 +30,7 @@ func TestNode_incBallot(t *testing.T) {
 
 func TestMingleNodes(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
-	store := &InmemStore{KV: kv}
+	store := &InmemStore{kv: kv}
 	tests := []struct {
 		name        string
 		nodes       []*Node
@@ -61,7 +61,7 @@ func TestMingleNodes(t *testing.T) {
 
 func TestMingleNodesMoreTimes(t *testing.T) {
 	kv := map[string][]byte{"": []byte("")}
-	store := &InmemStore{KV: kv}
+	store := &InmemStore{kv: kv}
 	tests := []struct {
 		name        string
 		nodes       []*Node
