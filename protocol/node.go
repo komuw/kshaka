@@ -202,6 +202,7 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range n.nodes {
 		go func(a *Node) {
+			fmt.Println("a.trans", a.Trans)
 			acceptedState, err := a.Trans.TransportPrepare(n.Ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
@@ -321,7 +322,9 @@ func (n *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	n.Lock()
 	defer n.Unlock()
 
+	fmt.Println("key", key, string(key))
 	state, err := n.acceptorStore.Get(key)
+	fmt.Println("state", state, string(state), err)
 	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// see: issues/10
 		// TODO: do better
