@@ -58,6 +58,8 @@ jobs:
         - run:
             name: run gometalinter
             command: source /etc/profile && gometalinter --disable-all \
+                                                            --vendor \
+                                                            --aggregate \
                                                             --enable=vet \
                                                             --enable=vetshadow \
                                                             --enable=structcheck \
@@ -65,8 +67,8 @@ jobs:
                                                             --enable=nakedret \
                                                             --enable=deadcode \
                                                             --enable=gocyclo \
+                                                            --cyclo-over=21 \
                                                             --enable=ineffassign \
-                                                            --enable=dupl \
                                                             --enable=golint \
                                                             --enable=gotype \
                                                             --enable=goimports \
@@ -79,8 +81,7 @@ jobs:
                                                             --enable=unparam \
                                                             --enable=unused \
                                                             --enable=gas \
-                                                            --enable=safesql \
-                                                            ./...
+                                                            --enable=safesql ./...
 
         - run:
             name: codecov

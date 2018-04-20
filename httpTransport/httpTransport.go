@@ -1,4 +1,8 @@
-package kshaka
+/*
+Package httpTransport provides a sample implementation of kshaka's transport interface
+This implementation uses net/http to communicate between different kshaka Nodes.
+*/
+package httpTransport
 
 import (
 	"bytes"
@@ -7,6 +11,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/komuw/kshaka/protocol"
 )
 
 // HTTPtransport provides a http based transport that can be
@@ -19,18 +25,18 @@ type HTTPtransport struct {
 	AcceptURI    string
 }
 
-// HTTPtransportPrepareRequest is the request sent during prepare phase
+// PrepareRequest is the request sent during prepare phase
 // specifically for the HTTPtransport
-type HTTPtransportPrepareRequest struct {
-	B   Ballot
+type PrepareRequest struct {
+	B   protocol.Ballot
 	Key []byte
 }
 
 // TransportPrepare implements the Transport interface.
-func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, error) {
-	acceptedState := AcceptorState{}
+func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protocol.AcceptorState, error) {
+	acceptedState := protocol.AcceptorState{}
 
-	prepReq := HTTPtransportPrepareRequest{B: b, Key: key}
+	prepReq := PrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.PrepareURI
 	prepReqJSON, err := json.Marshal(prepReq)
 	if err != nil {
@@ -57,25 +63,21 @@ func (ht *HTTPtransport) TransportPrepare(b Ballot, key []byte) (AcceptorState, 
 	}
 
 	err = json.Unmarshal(body, &acceptedState)
-	if err != nil {
-		return acceptedState, err
-	}
-
-	return acceptedState, nil
+	return acceptedState, err
 }
 
-// HTTPtransportAcceptRequest is the request sent during accept phase
+// AcceptRequest is the request sent during accept phase
 // specifically for the HTTPtransport
-type HTTPtransportAcceptRequest struct {
-	B     Ballot
+type AcceptRequest struct {
+	B     protocol.Ballot
 	Key   []byte
 	State []byte
 }
 
 // TransportAccept implements the Transport interface.
-func (ht *HTTPtransport) TransportAccept(b Ballot, key []byte, state []byte) (AcceptorState, error) {
-	acceptedState := AcceptorState{}
-	acceptReq := HTTPtransportAcceptRequest{B: b, Key: key, State: state}
+func (ht *HTTPtransport) TransportAccept(b protocol.Ballot, key []byte, state []byte) (protocol.AcceptorState, error) {
+	acceptedState := protocol.AcceptorState{}
+	acceptReq := AcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.AcceptURI
 	acceptReqJSON, err := json.Marshal(acceptReq)
 	if err != nil {
@@ -101,9 +103,5 @@ func (ht *HTTPtransport) TransportAccept(b Ballot, key []byte, state []byte) (Ac
 	}
 
 	err = json.Unmarshal(body, &acceptedState)
-	if err != nil {
-		return acceptedState, err
-	}
-
-	return acceptedState, nil
+	return acceptedState, err
 }

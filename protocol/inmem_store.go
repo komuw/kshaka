@@ -1,4 +1,4 @@
-package kshaka
+package protocol
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 type InmemStore struct {
 	l     sync.RWMutex
 	kv    map[string][]byte
-	kvInt map[string]uint64
+	kvint map[string]uint64
 }
 
 // Set implements the StableStore interface.
@@ -43,7 +43,7 @@ func (i *InmemStore) Get(key []byte) ([]byte, error) {
 func (i *InmemStore) SetUint64(key []byte, val uint64) error {
 	i.l.Lock()
 	defer i.l.Unlock()
-	i.kvInt[string(key)] = val
+	i.kvint[string(key)] = val
 	return nil
 }
 
@@ -51,5 +51,5 @@ func (i *InmemStore) SetUint64(key []byte, val uint64) error {
 func (i *InmemStore) GetUint64(key []byte) (uint64, error) {
 	i.l.RLock()
 	defer i.l.RUnlock()
-	return i.kvInt[string(key)], nil
+	return i.kvint[string(key)], nil
 }

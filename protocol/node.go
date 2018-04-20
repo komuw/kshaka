@@ -1,6 +1,6 @@
 /*
-Package kshaka is a pure Go implementation of the CASPaxos consensus protocol.
-It's name is derived from the Kenyan hip hop group, Kalamashakn.
+Package protocol is a pure Go implementation of the CASPaxos consensus protocol.
+It's name is derived from the Kenyan hip hop group, Kalamashaka.
 
 "CASPaxos is a replicated state machine (RSM) protocol. Unlike Raft and Multi-Paxos,
 it doesn't use leader election and log replication, thus avoiding associated complexity.
@@ -15,14 +15,12 @@ Example usage:
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
-		"github.com/komuw/kshaka"
+		"github.com/komuw/kshaka/protocol"
 	)
 
 	func main() {
-		// Create a store that will be used.
-		// Ideally it should be a disk persisted store.
-		// Any that implements hashicorp/raft StableStore
-		// interface will suffice
+		// The store should, ideally be disk persisted.
+		// Any that implements hashicorp/raft StableStore interface will suffice
 		boltStore, err := raftboltdb.NewBoltStore("/tmp/bolt.db")
 		if err != nil {
 			panic(err)
@@ -31,38 +29,31 @@ Example usage:
 		// The function that will be applied by CASPaxos.
 		// This will be applied to the current value stored
 		// under the key passed into the Propose method of the proposer.
-		var setFunc = func(val []byte) kshaka.ChangeFunction {
+		var setFunc = func(val []byte) protocol.ChangeFunction {
 			return func(current []byte) ([]byte, error) {
 				return val, nil
 			}
 		}
 
-		// Create a Node with a list of additional nodes.
-		// Number of nodes needed for quorom ought to be >= 3.
-
-		// Note that in this example; nodes are using the same store
-		// and are located in the same server/machine.
-		// In practice however, nodes ideally should be
+		// Note that, in practice, nodes ideally should be
 		// in different machines each with its own store.
-		node1 := kshaka.NewNode(1, boltStore)
-		node2 := kshaka.NewNode(2, boltStore)
-		node3 := kshaka.NewNode(3, boltStore)
+		node1 := protocol.NewNode(1, boltStore)
+		node2 := protocol.NewNode(2, boltStore)
+		node3 := protocol.NewNode(3, boltStore)
 
-		transport1 := &kshaka.InmemTransport{Node: node1}
-		transport2 := &kshaka.InmemTransport{Node: node2}
-		transport3 := &kshaka.InmemTransport{Node: node3}
+		transport1 := &protocol.InmemTransport{Node: node1}
+		transport2 := &protocol.InmemTransport{Node: node2}
+		transport3 := &protocol.InmemTransport{Node: node3}
 		node1.AddTransport(transport1)
 		node2.AddTransport(transport2)
 		node3.AddTransport(transport3)
 
-		kshaka.MingleNodes(node1, node2, node3)
+		protocol.MingleNodes(node1, node2, node3)
 
 		key := []byte("name")
 		val := []byte("Masta-Ace")
 
 		// make a proposition; consensus via CASPaxos will
-		// happen and you will get the new state and any error back.
-		// NB: you can call Propose on any of the nodes
 		newstate, err := node2.Propose(key, setFunc(val))
 		if err != nil {
 			fmt.Printf("err: %v", err)
@@ -70,11 +61,9 @@ Example usage:
 		fmt.Printf("\n newstate: %v \n", newstate)
 	}
 
-
-
 TODO: add system design here.
 */
-package kshaka
+package protocol
 
 import (
 	"bytes"
@@ -89,7 +78,9 @@ const stableStoreNotFoundErr = "not found"
 
 // Node satisfies the ProposerAcceptor interface.
 // A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
+// note: the fields; acceptorStore, Trans and nodes should not be nil/default values
 type Node struct {
+	// ID should be unique to each node in the cluster.
 	ID       uint64
 	Metadata map[string]string
 	Ballot   Ballot
@@ -105,8 +96,6 @@ type Node struct {
 	// It provides stable storage for many fields in raftState
 	acceptorStore StableStore
 
-	// TODO: maybe add a transport interface
-	// so that lib users can roll their own
 	Trans Transport
 }
 
@@ -138,6 +127,21 @@ func MingleNodes(nodes ...*Node) {
 	}
 }
 
+// AddTransport adds transport to a node.
+func (n *Node) AddTransport(t Transport) {
+	n.Trans = t
+}
+
+// AddMetadata adds metadata to a node. eg name=myNode, env=production
+func (n *Node) AddMetadata(metadata map[string]string) {
+	n.Metadata = metadata
+}
+
+// monotonically increase the Ballot
+func (n *Node) incBallot() {
+	n.Ballot.Counter++
+}
+
 // Propose is the method that clients call when they want to submit
 // the f change function to a proposer.
 // It takes the key whose value you want to apply the ChangeFunction to
@@ -160,21 +164,6 @@ func (n *Node) Propose(key []byte, changeFunc ChangeFunction) ([]byte, error) {
 	fmt.Printf("newState: %+v %+v\n", newState, string(newState))
 
 	return newState, nil
-}
-
-// AddTransport adds transport to a node.
-func (n *Node) AddTransport(t Transport) {
-	n.Trans = t
-}
-
-// AddMetadata adds metadata to a node. eg name=myNode, env=production
-func (n *Node) AddMetadata(metadata map[string]string) {
-	n.Metadata = metadata
-}
-
-// monotonically increase the Ballot
-func (n *Node) incBallot() {
-	n.Ballot.Counter++
 }
 
 // The proposer generates a Ballot number, B, and sends ”prepare” messages containing that number(and it's ID) to the acceptors.

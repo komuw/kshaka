@@ -1,4 +1,4 @@
-package kshaka
+package protocol
 
 // StableStore is used to provide stable storage
 // of key configurations to ensure safety.

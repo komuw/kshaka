@@ -1,11 +1,9 @@
-package kshaka
+package protocol
 
 // InmemTransport Implements the Transport interface, to allow kshaka/CASPaxos to be
 // tested in-memory without going over a network.
 type InmemTransport struct {
-	NodeAddrress string
-	NodePort     string
-	Node         *Node
+	Node *Node
 }
 
 // TransportPrepare implements the Transport interface.

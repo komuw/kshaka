@@ -1,4 +1,4 @@
-package kshaka
+package protocol
 
 import (
 	"reflect"
@@ -29,52 +29,59 @@ func TestPropose(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		pa      ProposerAcceptor
+		n       *Node
 		args    args
 		want    []byte
 		wantErr bool
 	}{
 		{name: "no acceptors",
-			pa:      &Node{ID: 1, Ballot: Ballot{}},
+			n:       &Node{ID: 1, Ballot: Ballot{}, acceptorStore: acceptorStore},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
 		{name: "two acceptors",
-			pa:      &Node{ID: 1, Ballot: Ballot{}, nodes: []*Node{NewNode(1, acceptorStore), NewNode(2, acceptorStore)}},
+			n: &Node{ID: 1,
+				Ballot: Ballot{},
+				nodes: []*Node{NewNode(1, acceptorStore),
+					NewNode(2, acceptorStore)},
+				acceptorStore: acceptorStore},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: true,
 		},
 		{name: "enough acceptors readFunc no key set",
-			pa: &Node{ID: 1,
+			n: &Node{ID: 1,
 				Ballot: Ballot{},
 				nodes: []*Node{NewNode(1, acceptorStore),
 					NewNode(2, acceptorStore),
 					NewNode(3, acceptorStore),
-					NewNode(4, acceptorStore)}},
+					NewNode(4, acceptorStore)},
+				acceptorStore: acceptorStore},
 			args:    args{key: []byte("foo"), changeFunc: readFunc},
 			want:    nil,
 			wantErr: false,
 		},
 		{name: "enough acceptors readFunc with key set",
-			pa: &Node{ID: 1,
+			n: &Node{ID: 1,
 				Ballot: Ballot{},
 				nodes: []*Node{NewNode(1, acceptorStore2),
 					NewNode(2, acceptorStore2),
 					NewNode(3, acceptorStore2),
-					NewNode(4, acceptorStore2)}},
+					NewNode(4, acceptorStore2)},
+				acceptorStore: acceptorStore2},
 			args:    args{key: []byte("Bob"), changeFunc: readFunc},
 			want:    []byte("Marley"),
 			wantErr: false,
 		},
 		{name: "enough acceptors setFunc",
-			pa: &Node{ID: 1,
+			n: &Node{ID: 1,
 				Ballot: Ballot{},
 				nodes: []*Node{NewNode(1, acceptorStore),
 					NewNode(2, acceptorStore),
 					NewNode(3, acceptorStore),
-					NewNode(4, acceptorStore)}},
+					NewNode(4, acceptorStore)},
+				acceptorStore: acceptorStore},
 			args:    args{key: []byte("stephen"), changeFunc: setFunc([]byte("hawking"))},
 			want:    []byte("hawking"),
 			wantErr: false,
@@ -83,8 +90,14 @@ func TestPropose(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// add transport
+			transport := &InmemTransport{Node: tt.n}
+			tt.n.AddTransport(transport)
+			for _, n := range tt.n.nodes {
+				n.AddTransport(transport)
+			}
 
-			newstate, err := tt.pa.Propose(tt.args.key, tt.args.changeFunc)
+			newstate, err := tt.n.Propose(tt.args.key, tt.args.changeFunc)
 			t.Logf("\nnewstate:%#+v, \nerr:%#+v", newstate, err)
 
 			if (err != nil) != tt.wantErr {
