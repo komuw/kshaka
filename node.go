@@ -78,7 +78,7 @@ import (
 const stableStoreNotFoundErr = "not found"
 
 // Node satisfies the ProposerAcceptor interface.
-// A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
+// A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor.
 // note: the fields; acceptorStore, Trans and nodes should not be nil/default values
 type Node struct {
 	// ID should be unique to each node in the cluster.
