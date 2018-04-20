@@ -15,7 +15,7 @@ Example usage:
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
-		"github.com/komuw/kshaka/protocol"
+		"github.com/komuw/kshaka"
 	)
 
 	func main() {
@@ -60,6 +60,7 @@ Example usage:
 		}
 		fmt.Printf("\n newstate: %v \n", newstate)
 	}
+
 
 TODO: add system design here.
 */

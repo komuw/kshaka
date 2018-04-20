@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/raft-boltdb"
-	"github.com/komuw/kshaka/protocol"
+	"github.com/komuw/kshaka"
 )
 
 func main() {
