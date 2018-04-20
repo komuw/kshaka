@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/raft-boltdb"
+	"github.com/komuw/kshaka"
 	"github.com/komuw/kshaka/httpTransport"
-	"github.com/komuw/kshaka/protocol"
 )
 
 // HTTPtransportProposeRequest is the request sent as a proposal

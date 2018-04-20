@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/kshaka/protocol"
+	"github.com/komuw/kshaka"
 )
 
 // HTTPtransport provides a http based transport that can be
