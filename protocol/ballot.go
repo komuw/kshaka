@@ -1,4 +1,4 @@
-package protocol
+package kshaka
 
 // Ballot is unique increasing updateID
 // It’s convenient to use tuples as Ballot numbers.

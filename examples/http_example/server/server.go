@@ -19,17 +19,17 @@ type HTTPtransportProposeRequest struct {
 	FunctionName string
 }
 
-var setFunc = func(val []byte) protocol.ChangeFunction {
+var setFunc = func(val []byte) kshaka.ChangeFunction {
 	return func(current []byte) ([]byte, error) {
 		return val, nil
 	}
 }
 
-var readFunc protocol.ChangeFunction = func(current []byte) ([]byte, error) {
+var readFunc kshaka.ChangeFunction = func(current []byte) ([]byte, error) {
 	return current, nil
 }
 
-func proposeHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Request) {
+func proposeHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -61,7 +61,7 @@ func proposeHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func prepareHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Request) {
+func prepareHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -94,7 +94,7 @@ func prepareHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func acceptHandler(n *protocol.Node) func(w http.ResponseWriter, r *http.Request) {
+func acceptHandler(n *kshaka.Node) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -146,9 +146,9 @@ func main() {
 
 	// Note that in this example; nodes are located in the same server/machine.
 	// In practice however, nodes ideally should be in different machines
-	node1 := protocol.NewNode(1, boltStore1)
-	node2 := protocol.NewNode(2, boltStore2)
-	node3 := protocol.NewNode(3, boltStore3)
+	node1 := kshaka.NewNode(1, boltStore1)
+	node2 := kshaka.NewNode(2, boltStore2)
+	node3 := kshaka.NewNode(3, boltStore3)
 
 	transport1 := &httpTransport.HTTPtransport{
 		NodeAddrress: "127.0.0.1",
@@ -173,7 +173,7 @@ func main() {
 	node2.AddTransport(transport2)
 	node3.AddTransport(transport3)
 
-	protocol.MingleNodes(node1, node2, node3)
+	kshaka.MingleNodes(node1, node2, node3)
 
 	http.HandleFunc("/propose", proposeHandler(node1))
 	http.HandleFunc("/prepare", prepareHandler(node1))
