@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/komuw/kshaka/protocol"
+	"github.com/komuw/kshaka"
 )
 
 // HTTPtransport provides a http based transport that can be
@@ -28,13 +28,13 @@ type HTTPtransport struct {
 // PrepareRequest is the request sent during prepare phase
 // specifically for the HTTPtransport
 type PrepareRequest struct {
-	B   protocol.Ballot
+	B   kshaka.Ballot
 	Key []byte
 }
 
 // TransportPrepare implements the Transport interface.
-func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protocol.AcceptorState, error) {
-	acceptedState := protocol.AcceptorState{}
+func (ht *HTTPtransport) TransportPrepare(b kshaka.Ballot, key []byte) (kshaka.AcceptorState, error) {
+	acceptedState := kshaka.AcceptorState{}
 
 	prepReq := PrepareRequest{B: b, Key: key}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.PrepareURI
@@ -69,14 +69,14 @@ func (ht *HTTPtransport) TransportPrepare(b protocol.Ballot, key []byte) (protoc
 // AcceptRequest is the request sent during accept phase
 // specifically for the HTTPtransport
 type AcceptRequest struct {
-	B     protocol.Ballot
+	B     kshaka.Ballot
 	Key   []byte
 	State []byte
 }
 
 // TransportAccept implements the Transport interface.
-func (ht *HTTPtransport) TransportAccept(b protocol.Ballot, key []byte, state []byte) (protocol.AcceptorState, error) {
-	acceptedState := protocol.AcceptorState{}
+func (ht *HTTPtransport) TransportAccept(b kshaka.Ballot, key []byte, state []byte) (kshaka.AcceptorState, error) {
+	acceptedState := kshaka.AcceptorState{}
 	acceptReq := AcceptRequest{B: b, Key: key, State: state}
 	url := "http://" + ht.NodeAddrress + ":" + ht.NodePort + ht.AcceptURI
 	acceptReqJSON, err := json.Marshal(acceptReq)

@@ -1,8 +1,8 @@
 /*
-Package protocol is a pure Go implementation of the CASPaxos consensus protocol.
+package kshaka is a pure Go implementation of the CASPaxos consensus protocol.
 It's name is derived from the Kenyan hip hop group, Kalamashaka.
 
-"CASPaxos is a replicated state machine (RSM) protocol. Unlike Raft and Multi-Paxos,
+"CASPaxos is a replicated state machine (RSM) kshaka. Unlike Raft and Multi-Paxos,
 it doesn't use leader election and log replication, thus avoiding associated complexity.
 Its symmetric peer-to-peer approach achieves optimal commit latency in wide-area networks
 and doesn't cause transient unavailability when any [N−1] of N nodes crash." - The CASPaxos whitepaper, https://github.com/rystsov/caspaxos/blob/master/latex/caspaxos.pdf
@@ -15,7 +15,7 @@ Example usage:
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
-		"github.com/komuw/kshaka/protocol"
+		"github.com/komuw/kshaka"
 	)
 
 	func main() {
@@ -29,7 +29,7 @@ Example usage:
 		// The function that will be applied by CASPaxos.
 		// This will be applied to the current value stored
 		// under the key passed into the Propose method of the proposer.
-		var setFunc = func(val []byte) protocol.ChangeFunction {
+		var setFunc = func(val []byte) kshaka.ChangeFunction {
 			return func(current []byte) ([]byte, error) {
 				return val, nil
 			}
@@ -37,18 +37,18 @@ Example usage:
 
 		// Note that, in practice, nodes ideally should be
 		// in different machines each with its own store.
-		node1 := protocol.NewNode(1, boltStore)
-		node2 := protocol.NewNode(2, boltStore)
-		node3 := protocol.NewNode(3, boltStore)
+		node1 := kshaka.NewNode(1, boltStore)
+		node2 := kshaka.NewNode(2, boltStore)
+		node3 := kshaka.NewNode(3, boltStore)
 
-		transport1 := &protocol.InmemTransport{Node: node1}
-		transport2 := &protocol.InmemTransport{Node: node2}
-		transport3 := &protocol.InmemTransport{Node: node3}
+		transport1 := &kshaka.InmemTransport{Node: node1}
+		transport2 := &kshaka.InmemTransport{Node: node2}
+		transport3 := &kshaka.InmemTransport{Node: node3}
 		node1.AddTransport(transport1)
 		node2.AddTransport(transport2)
 		node3.AddTransport(transport3)
 
-		protocol.MingleNodes(node1, node2, node3)
+		kshaka.MingleNodes(node1, node2, node3)
 
 		key := []byte("name")
 		val := []byte("Masta-Ace")
@@ -61,9 +61,10 @@ Example usage:
 		fmt.Printf("\n newstate: %v \n", newstate)
 	}
 
+
 TODO: add system design here.
 */
-package protocol
+package kshaka
 
 import (
 	"bytes"

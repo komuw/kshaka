@@ -1,4 +1,4 @@
-package protocol
+package kshaka
 
 /*
 ChangeFunction is the function that clients send to proposers.
