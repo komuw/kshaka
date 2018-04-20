@@ -12,15 +12,10 @@ Example usage:
 	package main
 
 	import (
-	"github.com/sanity-io/litter"
-	"golang_org/x/net/lif"
-	"github.com/sanity-io/litter"
-	"golang_org/x/net/lif"
 		"fmt"
 
 		"github.com/hashicorp/raft-boltdb"
 		"github.com/komuw/kshaka/protocol"
-		"github.com/komuw/kshaka/transport"
 	)
 
 	func main() {
@@ -46,9 +41,9 @@ Example usage:
 		node2 := protocol.NewNode(2, boltStore)
 		node3 := protocol.NewNode(3, boltStore)
 
-		transport1 := &transport.InmemTransport{Node: node1}
-		transport2 := &transport.InmemTransport{Node: node2}
-		transport3 := &transport.InmemTransport{Node: node3}
+		transport1 := &protocol.InmemTransport{Node: node1}
+		transport2 := &protocol.InmemTransport{Node: node2}
+		transport3 := &protocol.InmemTransport{Node: node3}
 		node1.AddTransport(transport1)
 		node2.AddTransport(transport2)
 		node3.AddTransport(transport3)
@@ -83,6 +78,7 @@ const stableStoreNotFoundErr = "not found"
 
 // Node satisfies the ProposerAcceptor interface.
 // A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
+// note: the fields; acceptorStore, Trans and nodes should not be nil/default values
 type Node struct {
 	// ID should be unique to each node in the cluster.
 	ID       uint64
@@ -202,7 +198,6 @@ func (n *Node) sendPrepare(key []byte) ([]byte, error) {
 	prepareResultChan := make(chan prepareResult, noAcceptors)
 	for _, a := range n.nodes {
 		go func(a *Node) {
-			fmt.Println("a.trans", a.Trans)
 			acceptedState, err := a.Trans.TransportPrepare(n.Ballot, key)
 			prepareResultChan <- prepareResult{acceptedState, err}
 		}(a)
@@ -322,9 +317,7 @@ func (n *Node) Prepare(b Ballot, key []byte) (AcceptorState, error) {
 	n.Lock()
 	defer n.Unlock()
 
-	fmt.Println("key", key, string(key))
 	state, err := n.acceptorStore.Get(key)
-	fmt.Println("state", state, string(state), err)
 	if err != nil && err.Error() == stableStoreNotFoundErr {
 		// see: issues/10
 		// TODO: do better
