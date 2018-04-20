@@ -85,6 +85,7 @@ const stableStoreNotFoundErr = "not found"
 // Node satisfies the ProposerAcceptor interface.
 // A Node is both a proposer and an acceptor. Most people will be interacting with a Node instead of a Proposer/Acceptor
 type Node struct {
+	// ID should be unique to each node in the cluster.
 	ID       uint64
 	Metadata map[string]string
 	Ballot   Ballot
@@ -109,14 +110,25 @@ func NewNode(ID uint64, store StableStore) *Node {
 	return n
 }
 
+func removeDuplicatesNodes(a []*Node) []*Node {
+	result := []*Node{}
+	seen := map[uint64]*Node{}
+	for _, val := range a {
+		if _, ok := seen[val.ID]; !ok {
+			result = append(result, val)
+			seen[val.ID] = val
+		}
+	}
+	return result
+}
+
 // MingleNodes lets each node know about the other, including itself.
 func MingleNodes(nodes ...*Node) {
 	for _, n := range nodes {
-		// guard against adding same node twice
-		// TODO: fix this since it breaks down if len(nodes) > n.nodes even when some of those nodes already exist in n.nodes
-		if len(n.nodes) < len(nodes) {
-			n.nodes = append(n.nodes, nodes...)
-		}
+		incomingNodes := nodes
+		unDedupedNodes := append(incomingNodes, n.nodes...)
+		dedupedNodes := removeDuplicatesNodes(unDedupedNodes)
+		n.nodes = dedupedNodes
 	}
 }
 
