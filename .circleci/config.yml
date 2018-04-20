@@ -81,8 +81,7 @@ jobs:
                                                             --enable=unparam \
                                                             --enable=unused \
                                                             --enable=gas \
-                                                            --enable=safesql \
-                                                            ./...
+                                                            --enable=safesql ./...
 
         - run:
             name: codecov
